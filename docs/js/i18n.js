@@ -231,16 +231,23 @@ const STRINGS = {
     'a.lang.en': 'English',
     'a.lang.any': 'All languages',
 
+
     // Owl trash talk after each question
-    'tt.fast': ['⚡ {name} answered so fast, the question is still catching its breath!', '⚡ {name} has turbo fingers! Somebody check for rocket boosters.', '⚡ Blink and you missed it. {name} was already done!'],
-    'tt.streak': ['🔥 {name} is on a {n}-answer streak! Someone grab a fire extinguisher!', '🔥 {n} in a row for {name}! Is this a quiz or a magic show?'],
-    'tt.climb': ['🚀 {name} just rocketed up {n} places. Fasten your seatbelts!', '🧗 {name} climbed {n} places like a champion mountain goat!'],
-    'tt.leader': ['👑 {name} is still wearing the crown. Can anyone stop this?', '👑 {name} is still on top. That throne is getting comfy!'],
-    'tt.allRight': ["🎉 Too easy! Next time I'm asking in dolphin language. 🐬", '🎉 A whole room of geniuses! My feathers are shaking.'],
-    'tt.noneRight': ["🤯 Nobody got it! Even I got confused, and I'm an owl.", '🤯 Zero right answers! That question was a sneaky ninja.'],
-    'tt.wrong': ["🙈 {name}'s answer went on vacation. Send a postcard! 🏖️", "🐢 {name}'s brain is still loading… 12%", '🎯 Great aim, {name}! Wrong target, but great aim.', '🍌 {name} gets zero points, but a hundred for confidence!'],
-    'tt.sleepy': ['😴 {name} was busy counting sheep. 🐑', '🍪 {name} must be on a snack break.', "📵 {name}'s fingers forgot they had a job!"],
-    'tt.lostStreak': ["💔 {name}'s streak just slipped on a banana peel. 🍌", "💥 Oh no! {name}'s {n}-answer streak went POP!"],
+    'tt.fast': ['⚡ {name} answered so fast, the question is still catching its breath!', '⚡ {name} has turbo fingers! Somebody check for rocket boosters.', '⚡ Blink and you missed it. {name} was already done!', '🏎️ {name} just broke the speed limit. Ticket incoming!', '⚡ {name} answered before I finished reading. Rude! 😄', '🐆 A cheetah called. It wants its speed back from {name}.', '🍿 {name} answered faster than popcorn pops!', '⚡ Was that lightning? No, just {name} answering.'],
+    'tt.streak': ['🔥 {name} is on a {n}-answer streak! Someone grab a fire extinguisher!', '🔥 {n} in a row for {name}! Is this a quiz or a magic show?', '🎯 {name} has hit {n} bullseyes in a row. Robin Hood is getting nervous.', '🤖 {n} in a row? {name}, are you secretly a robot?', '🌶️ {name} is spicy hot: {n} in a row!', "🧠 {name}'s brain is doing push-ups. {n} in a row!", '🎳 Strike after strike! {name} is on {n} in a row.'],
+    'tt.climb': ['🚀 {name} just rocketed up {n} places. Fasten your seatbelts!', '🧗 {name} climbed {n} places like a champion mountain goat!', '🛗 Going up! {name} took the express elevator: {n} floors.', '🦘 Boing! {name} jumped {n} places like a kangaroo.', "📈 {name}'s chart is going straight up: +{n} places!", '🎈 {name} is floating up the scoreboard, {n} places higher!'],
+    'tt.leader': ['👑 {name} is still wearing the crown. Can anyone stop this?', '👑 {name} is still on top. That throne is getting comfy!', '🏔️ {name} is still at the summit. The view must be amazing up there!', '🦁 {name} is still the boss of this quiz!', '📢 Breaking news: {name} is STILL in first place!', '🥇 {name} is keeping that gold medal nice and warm.'],
+    'tt.comeback': ['💪 {name} is back in business! What a comeback!', '🔄 {name} shook off the last one like a wet dog. Correct!', '🦸 Plot twist! {name} bounces right back!', '🌱 {name} learned from the last one. Growth mindset!', '🎢 Down, then up! {name} is riding the roller coaster.'],
+    'tt.lone': ['🦉 Only {name} knew that one! Owl-level wisdom!', "🌟 There's one genius in the room, and it's {name}!", '🕵️ {name} cracked the case all alone!', '🏝️ {name} is the only survivor on Correct Answer Island!', '🔦 Everyone was in the dark, except {name}!'],
+    'tt.lastSecond': ['⏰ {name} answered in the very last second! My heart!', '😅 Phew! {name} made it just in time.', '🏃 {name} jumped on the train as the doors were closing!', '⌛ {name} likes living on the edge. Right at the buzzer!'],
+    'tt.perfect': ['💯 {name} is perfect so far: {n} out of {n}!', '✨ Not a single mistake yet! {name} is flawless.', '🏆 {n} questions, {n} right answers. {name}, save some for the others!'],
+    'tt.wrong': ["🏖️ {name}'s answer went on vacation. Send a postcard!", "🐢 {name}'s brain is still loading… 12%", '🎯 Great aim, {name}! Wrong target, but great aim.', '🍌 {name} gets zero points, but a hundred for confidence!', "🧭 {name}'s compass pointed somewhere else today.", '🙈 {name} picked that with total confidence… and total wrongness!', '🎲 {name} rolled the dice on that one. The dice said no.', '🦆 Quack! {name} took a little detour.', "🔮 {name}'s crystal ball needs new batteries.", "🍝 {name}'s brain served spaghetti on that one."],
+    'tt.sleepy': ['😴 {name} was busy counting sheep. 🐑', '🍪 {name} must be on a snack break.', "📵 {name}'s fingers forgot they had a job!", '🐌 {name} is sending the answer by snail mail.', '🛸 {name} got abducted by aliens for a moment.', '🧘 {name} is meditating. Very peaceful. Zero points.'],
+    'tt.lostStreak': ["💔 {name}'s streak just slipped on a banana peel. 🍌", "💥 Oh no! {name}'s {n}-answer streak went POP!", "🧊 {name}'s hot streak just hit an ice cube.", "🎈 Psssst… that's {name}'s {n}-answer streak going flat."],
+    'tt.allRight': ["🎉 Too easy! Next time I'm asking in dolphin language. 🐬", '🎉 A whole room of geniuses! My feathers are shaking.', '🧠 Everyone got it! Is this a quiz or a brain convention?', "🙌 100%! Okay, okay, I'll make the next one harder…", '🌈 A perfect round! Somebody frame this moment.'],
+    'tt.noneRight': ["🤯 Nobody got it! Even I got confused, and I'm an owl.", '🤯 Zero right answers! That question was a sneaky ninja.', "🙃 Everybody wrong? That's okay, the question was just showing off.", '🌪️ That question blew everyone away!', "🦉 Hoo-hoo-hoo… nobody? I'll pretend I didn't know either."],
+    'tt.closeRace': ['🏁 {name} and {name2} are neck and neck! Popcorn time! 🍿', '⚔️ Just a few points between {name} and {name2}. The tension!', '🥊 {name} vs. {name2}: the battle of the century!'],
+    'tt.sameWrong': ['🐑 {n} players picked "{answer}". Is that a secret club?', '🤝 "{answer}" got {n} votes. Wrong, but very popular!', '📣 The "{answer}" fan club has {n} members. Too bad it\'s the wrong answer!'],
   },
 
   he: {
@@ -493,30 +500,42 @@ const STRINGS = {
     'a.lang.en': 'אנגלית',
     'a.lang.any': 'כל השפות',
 
-    'tt.fast': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ ל-{name} יש אצבעות טילים! מישהו בדק אם יש שם מנוע סילון?', '⚡ מצמצתם? פספסתם! התשובה של {name} כבר הייתה בפנים.'],
-    'tt.streak': ['🔥 רצף של {n} תשובות נכונות ל-{name}! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! זה חידון או מופע קסמים?'],
-    'tt.climb': ['🚀 {name}: זינוק של {n} מקומות! חגרו חגורות!', '🧗 {n} מקומות למעלה ל-{name}! כמו עז הרים מקצוענית!'],
-    'tt.leader': ['👑 הכתר עדיין אצל {name}. מישהו יכול לעצור את זה?', '👑 {name} עדיין בפסגה. הכיסא שם כבר ממש נוח!'],
-    'tt.allRight': ['🎉 קל מדי! בפעם הבאה אני שואל בשפת דולפינים 🐬', '🎉 חדר מלא גאונים! הנוצות שלי רועדות.'],
-    'tt.noneRight': ['🤯 אף אחד לא ידע! אפילו אני התבלבלתי, ואני ינשוף!', '🤯 אפס תשובות נכונות! השאלה הזאת הייתה נינג׳ה ערמומית.'],
-    'tt.wrong': ['🙈 התשובה של {name} יצאה לחופשה. שלחו גלויה! 🏖️', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 כיוון מעולה, {name}! מטרה לא נכונה, אבל כיוון מעולה.', '🍌 {name}: אפס נקודות, אבל מאה על ביטחון עצמי!'],
-    'tt.sleepy': ['😴 {name} כנראה באמצע לספור כבשים 🐑', '🍪 {name} כנראה בהפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
-    'tt.lostStreak': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! הרצף של {name} ({n} ברצף) עשה פוף!'],
 
-    'tt.fast.m': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ {name} ענה כל כך מהר, שהשאלה עוד לא הספיקה להתיישב!', '⚡ מצמצתם? פספסתם! {name} כבר מזמן ענה.'],
-    'tt.fast.f': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ {name} ענתה כל כך מהר, שהשאלה עוד לא הספיקה להתיישב!', '⚡ מצמצתם? פספסתם! {name} כבר מזמן ענתה.'],
-    'tt.streak.m': ['🔥 {name} ברצף של {n} תשובות! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! הוא קוסם או מה?'],
-    'tt.streak.f': ['🔥 {name} ברצף של {n} תשובות! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! היא קוסמת או מה?'],
-    'tt.climb.m': ['🚀 {name} זינק {n} מקומות! חגרו חגורות!', '🧗 {name} טיפס {n} מקומות כמו עז הרים!'],
-    'tt.climb.f': ['🚀 {name} זינקה {n} מקומות! חגרו חגורות!', '🧗 {name} טיפסה {n} מקומות כמו עז הרים!'],
-    'tt.leader.m': ['👑 {name} עדיין מחזיק בכתר. מישהו יעצור אותו?', '👑 {name} עדיין בפסגה, והכיסא שם כבר ממש נוח לו!'],
-    'tt.leader.f': ['👑 {name} עדיין מחזיקה בכתר. מישהו יעצור אותה?', '👑 {name} עדיין בפסגה, והכיסא שם כבר ממש נוח לה!'],
-    'tt.wrong.m': ['🙈 {name} בחר תשובה בביטחון מלא… ובטעות מלאה!', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 {name} כיוון מעולה! רק למטרה הלא נכונה.', '🏖️ התשובה של {name} יצאה לחופשה. שלחו לו גלויה!'],
-    'tt.wrong.f': ['🙈 {name} בחרה תשובה בביטחון מלא… ובטעות מלאה!', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 {name} כיוונה מעולה! רק למטרה הלא נכונה.', '🏖️ התשובה של {name} יצאה לחופשה. שלחו לה גלויה!'],
-    'tt.sleepy.m': ['😴 {name} היה עסוק בלספור כבשים 🐑', '🍪 {name} כנראה יצא להפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
-    'tt.sleepy.f': ['😴 {name} הייתה עסוקה בלספור כבשים 🐑', '🍪 {name} כנראה יצאה להפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
-    'tt.lostStreak.m': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! {name} איבד רצף של {n}. פוף!'],
-    'tt.lostStreak.f': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! {name} איבדה רצף של {n}. פוף!'],
+
+    // Owl trash talk (Hebrew: ".m" / ".f" versions by player gender; plain versions are gender-neutral)
+    'tt.fast': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ מצמצתם? פספסתם! התשובה של {name} כבר הייתה בפנים.', '⚡ זה היה ברק? לא, זה רק {name}.'],
+    'tt.fast.m': ['⚡ {name} ענה כל כך מהר, שהשאלה עוד לא הספיקה להתיישב!', '⚡ מצמצתם? פספסתם! {name} כבר מזמן ענה.', '🏎️ {name} עבר את המהירות המותרת. דו״ח בדרך!', '⚡ {name} ענה לפני שסיימתי לקרוא. חוצפה! 😄', '🐆 צ׳יטה התקשרה. היא רוצה בחזרה את המהירות ש-{name} לקח.', '⚡ זה היה ברק? לא, זה רק {name} עונה.', '🚀 {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '🍿 {name} ענה מהר יותר מפופקורן שמתפוצץ!'],
+    'tt.fast.f': ['⚡ {name} ענתה כל כך מהר, שהשאלה עוד לא הספיקה להתיישב!', '⚡ מצמצתם? פספסתם! {name} כבר מזמן ענתה.', '🏎️ {name} עברה את המהירות המותרת. דו״ח בדרך!', '⚡ {name} ענתה לפני שסיימתי לקרוא. חוצפה! 😄', '🐆 צ׳יטה התקשרה. היא רוצה בחזרה את המהירות ש-{name} לקחה.', '⚡ זה היה ברק? לא, זו רק {name} עונה.', '🚀 {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '🍿 {name} ענתה מהר יותר מפופקורן שמתפוצץ!'],
+    'tt.streak': ['🔥 רצף של {n} תשובות נכונות ל-{name}! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! זה חידון או מופע קסמים?'],
+    'tt.streak.m': ['🔥 {name} ברצף של {n} תשובות! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! הוא קוסם או מה?', '🎯 {name} פגע בול {n} פעמים ברצף. רובין הוד מתחיל לדאוג.', '🤖 {n} ברצף? {name}, אתה בטוח שאתה לא רובוט?', '🌶️ {name} חם כמו פלפל חריף: {n} ברצף!', '🧠 המוח של {name} עושה שכיבות סמיכה. {n} ברצף!', '🎳 סטרייק אחרי סטרייק! {name} כבר {n} ברצף.'],
+    'tt.streak.f': ['🔥 {name} ברצף של {n} תשובות! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! היא קוסמת או מה?', '🎯 {name} פגעה בול {n} פעמים ברצף. רובין הוד מתחיל לדאוג.', '🤖 {n} ברצף? {name}, את בטוחה שאת לא רובוטית?', '🌶️ {name} חמה כמו פלפל חריף: {n} ברצף!', '🧠 המוח של {name} עושה שכיבות סמיכה. {n} ברצף!', '🎳 סטרייק אחרי סטרייק! {name} כבר {n} ברצף.'],
+    'tt.climb': ['🚀 {name}: זינוק של {n} מקומות! חגרו חגורות!', '🧗 {n} מקומות למעלה ל-{name}! כמו עז הרים מקצוענית!'],
+    'tt.climb.m': ['🚀 {name} זינק {n} מקומות! חגרו חגורות!', '🧗 {name} טיפס {n} מקומות כמו עז הרים!', '🛗 עולים! {name} לקח את המעלית המהירה, {n} קומות למעלה.', '🦘 בוינג! {name} קפץ {n} מקומות כמו קנגורו.', '📈 הגרף של {name} טס למעלה: עוד {n} מקומות!', '🎈 {name} מרחף למעלה בטבלה, {n} מקומות!'],
+    'tt.climb.f': ['🚀 {name} זינקה {n} מקומות! חגרו חגורות!', '🧗 {name} טיפסה {n} מקומות כמו עז הרים!', '🛗 עולים! {name} לקחה את המעלית המהירה, {n} קומות למעלה.', '🦘 בוינג! {name} קפצה {n} מקומות כמו קנגורו.', '📈 הגרף של {name} טס למעלה: עוד {n} מקומות!', '🎈 {name} מרחפת למעלה בטבלה, {n} מקומות!'],
+    'tt.leader': ['👑 הכתר עדיין אצל {name}. מישהו יכול לעצור את זה?', '👑 {name} עדיין בפסגה. הכיסא שם כבר ממש נוח!'],
+    'tt.leader.m': ['👑 {name} עדיין מחזיק בכתר. מישהו יעצור אותו?', '👑 {name} עדיין בפסגה, והכיסא שם כבר ממש נוח לו!', '🏔️ {name} עדיין על הפסגה. בטח יש לו שם נוף מדהים!', '🦁 {name} עדיין הבוס של החידון!', '📢 מבזק: {name} עדיין במקום הראשון!', '🥇 {name} שומר על מדליית הזהב חמה וטעימה.'],
+    'tt.leader.f': ['👑 {name} עדיין מחזיקה בכתר. מישהו יעצור אותה?', '👑 {name} עדיין בפסגה, והכיסא שם כבר ממש נוח לה!', '🏔️ {name} עדיין על הפסגה. בטח יש לה שם נוף מדהים!', '🦁 {name} עדיין הבוסית של החידון!', '📢 מבזק: {name} עדיין במקום הראשון!', '🥇 {name} שומרת על מדליית הזהב חמה וטעימה.'],
+    'tt.comeback.m': ['💪 {name} חזר לעניינים! איזה קאמבק!', '🔄 {name} ניער את הטעות הקודמת כמו כלב רטוב. צדק!', '🦸 טוויסט בעלילה! {name} חוזר בגדול!', '🌱 {name} למד מהשאלה הקודמת. אלוף!', '🎢 למטה ואז למעלה! {name} על רכבת הרים.'],
+    'tt.comeback.f': ['💪 {name} חזרה לעניינים! איזה קאמבק!', '🔄 {name} ניערה את הטעות הקודמת כמו כלב רטוב. צדקה!', '🦸 טוויסט בעלילה! {name} חוזרת בגדול!', '🌱 {name} למדה מהשאלה הקודמת. אלופה!', '🎢 למטה ואז למעלה! {name} על רכבת הרים.'],
+    'tt.lone.m': ['🦉 רק {name} ידע את זה! חוכמה של ינשוף!', '🌟 יש גאון אחד בחדר, וזה {name}!', '🕵️ {name} פיצח את התעלומה לבד!', '🏝️ {name} הוא הניצול היחיד באי התשובות הנכונות!', '🔦 כולם היו בחושך, חוץ מ-{name}!'],
+    'tt.lone.f': ['🦉 רק {name} ידעה את זה! חוכמה של ינשוף!', '🌟 יש גאונה אחת בחדר, וזו {name}!', '🕵️ {name} פיצחה את התעלומה לבד!', '🏝️ {name} היא הניצולה היחידה באי התשובות הנכונות!', '🔦 כולם היו בחושך, חוץ מ-{name}!'],
+    'tt.lastSecond.m': ['⏰ {name} ענה ממש בשנייה האחרונה! כמעט קיבלתי התקף לב!', '😅 פיו! {name} הספיק בדיוק בזמן.', '🏃 {name} קפץ לרכבת בדיוק כשהדלתות נסגרו!', '⌛ {name} אוהב לחיות על הקצה. ממש על הבאזר!'],
+    'tt.lastSecond.f': ['⏰ {name} ענתה ממש בשנייה האחרונה! כמעט קיבלתי התקף לב!', '😅 פיו! {name} הספיקה בדיוק בזמן.', '🏃 {name} קפצה לרכבת בדיוק כשהדלתות נסגרו!', '⌛ {name} אוהבת לחיות על הקצה. ממש על הבאזר!'],
+    'tt.perfect.m': ['💯 {name} מושלם עד עכשיו: {n} מתוך {n}!', '✨ אף טעות עדיין! {name} פשוט בלי פגם.', '🏆 {n} שאלות, {n} תשובות נכונות. {name}, תשאיר קצת לאחרים!'],
+    'tt.perfect.f': ['💯 {name} מושלמת עד עכשיו: {n} מתוך {n}!', '✨ אף טעות עדיין! {name} פשוט בלי פגם.', '🏆 {n} שאלות, {n} תשובות נכונות. {name}, תשאירי קצת לאחרים!'],
+    'tt.wrong': ['🙈 התשובה של {name} יצאה לחופשה. שלחו גלויה! 🏖️', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 כיוון מעולה, {name}! מטרה לא נכונה, אבל כיוון מעולה.', '🍌 {name}: אפס נקודות, אבל מאה על ביטחון עצמי!'],
+    'tt.wrong.m': ['🏖️ התשובה של {name} יצאה לחופשה. שלחו לו גלויה!', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 {name} כיוון מעולה! רק למטרה הלא נכונה.', '🍌 {name}: אפס נקודות, אבל מאה על ביטחון עצמי!', '🧭 המצפן של {name} הצביע היום לכיוון אחר.', '🙈 {name} בחר תשובה בביטחון מלא… ובטעות מלאה!', '🎲 {name} הטיל קובייה. הקובייה אמרה לא.', '🦆 גע-גע! {name} לקח עיקוף קטן.', '🔮 כדור הבדולח של {name} צריך בטריות חדשות.', '🍝 המוח של {name} הגיש ספגטי בשאלה הזאת.'],
+    'tt.wrong.f': ['🏖️ התשובה של {name} יצאה לחופשה. שלחו לה גלויה!', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 {name} כיוונה מעולה! רק למטרה הלא נכונה.', '🍌 {name}: אפס נקודות, אבל מאה על ביטחון עצמי!', '🧭 המצפן של {name} הצביע היום לכיוון אחר.', '🙈 {name} בחרה תשובה בביטחון מלא… ובטעות מלאה!', '🎲 {name} הטילה קובייה. הקובייה אמרה לא.', '🦆 גע-גע! {name} לקחה עיקוף קטן.', '🔮 כדור הבדולח של {name} צריך בטריות חדשות.', '🍝 המוח של {name} הגיש ספגטי בשאלה הזאת.'],
+    'tt.sleepy': ['😴 {name} כנראה באמצע לספור כבשים 🐑', '🍪 {name} כנראה בהפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
+    'tt.sleepy.m': ['😴 {name} היה עסוק בלספור כבשים 🐑', '🍪 {name} כנראה יצא להפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!', '🐌 {name} שולח את התשובה בדואר חלזונות.', '🛸 {name} נחטף לרגע על ידי חייזרים.', '🧘 {name} עושה מדיטציה. מאוד רגוע. אפס נקודות.'],
+    'tt.sleepy.f': ['😴 {name} הייתה עסוקה בלספור כבשים 🐑', '🍪 {name} כנראה יצאה להפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!', '🐌 {name} שולחת את התשובה בדואר חלזונות.', '🛸 {name} נחטפה לרגע על ידי חייזרים.', '🧘 {name} עושה מדיטציה. מאוד רגועה. אפס נקודות.'],
+    'tt.lostStreak': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! הרצף של {name} ({n} ברצף) עשה פוף!'],
+    'tt.lostStreak.m': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! {name} איבד רצף של {n}. פוף!', '🧊 הרצף החם של {name} פגש קוביית קרח.', '🎈 פסססס… זה הרצף של {name} שמתרוקן.'],
+    'tt.lostStreak.f': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! {name} איבדה רצף של {n}. פוף!', '🧊 הרצף החם של {name} פגש קוביית קרח.', '🎈 פסססס… זה הרצף של {name} שמתרוקן.'],
+    'tt.allRight': ['🎉 קל מדי! בפעם הבאה אני שואל בשפת דולפינים 🐬', '🎉 חדר מלא גאונים! הנוצות שלי רועדות.', '🧠 כולם צדקו! זה חידון או כנס של מוחות?', '🙌 מאה אחוז! טוב, טוב, אני אקשה בשאלה הבאה…', '🌈 סיבוב מושלם! מישהו שימסגר את הרגע הזה.'],
+    'tt.noneRight': ['🤯 אף אחד לא ידע! אפילו אני התבלבלתי, ואני ינשוף!', '🤯 אפס תשובות נכונות! השאלה הזאת הייתה נינג׳ה ערמומית.', '🙃 כולם טעו? זה בסדר, השאלה פשוט השוויצה.', '🌪️ השאלה הזאת העיפה את כולם!', '🦉 הו-הו-הו… אף אחד? אני אעשה כאילו גם אני לא ידעתי.'],
+    'tt.closeRace': ['🏁 {name} ו-{name2} צמודים! זמן לפופקורן 🍿', '⚔️ רק כמה נקודות בין {name} לבין {name2}. איזה מתח!', '🥊 {name} נגד {name2}: הקרב של המאה!'],
+    'tt.sameWrong': ['🐑 {n} שחקנים בחרו "{answer}". מה זה, מועדון סודי?', '🤝 ל"{answer}" היו {n} קולות. לא נכון, אבל ממש פופולרי!', '📣 למועדון המעריצים של "{answer}" יש {n} חברים. חבל שזו לא התשובה!'],
   },
 };
 
@@ -529,10 +548,17 @@ let GENDER = null;
 function t(key, vars = {}) {
   const g = vars.g ?? GENDER;
   const table = STRINGS[LANG];
-  let v = (g && table[`${key}.${g}`]) ?? table[key] ?? STRINGS.en[key];
+  let v = (g && table[`${key}.${g}`]) ?? table[key] ?? table[`${key}.m`] ?? STRINGS.en[key];
   if (v === undefined) return key;
   if (typeof v === 'function') v = v(vars);
-  if (Array.isArray(v)) v = pick(v);
+  if (Array.isArray(v)) {
+    // vars._avoid (a Set) remembers lines already used, so lists don't repeat until they run out.
+    const avoid = vars._avoid;
+    let options = avoid ? v.filter(x => !avoid.has(x)) : v;
+    if (!options.length) { v.forEach(x => avoid.delete(x)); options = v; }
+    v = pick(options);
+    avoid?.add(v);
+  }
   v = v.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
   // Hebrew prefix letters join Hebrew words directly ("לדני") but keep a hyphen before other scripts ("ל-Max").
   if (LANG === 'he') v = v.replace(/(^|[\s(])([בהוכלמש])-(?=[\u05D0-\u05EA])/g, '$1$2');
@@ -540,7 +566,7 @@ function t(key, vars = {}) {
 }
 
 /* Same as t(), but with the {placeholders} HTML-escaped (for names typed by players). */
-const th = (key, vars = {}) => t(key, Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, k === 'g' ? v : esc(v)])));
+const th = (key, vars = {}) => t(key, Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, k === 'g' || k === '_avoid' ? v : esc(v)])));
 
 function setLang(lang) {
   try { localStorage.setItem('quizzle.lang', lang); } catch { }

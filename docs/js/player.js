@@ -139,7 +139,13 @@
       btn.disabled = true;
       btn.textContent = t('p.connecting');
       try {
-        await link.connect(pin);
+        try {
+          await link.connect(pin);
+        } catch (err) {
+          if (err.message === 'no-game') throw err;
+          link.disconnect();
+          await link.connect(pin); // one quiet retry for slow networks
+        }
         const res = await link.request({ t: 'check' });
         if (!res?.ok) throw new Error(t(res?.error || 'p.oops'));
         showName(pin, res.title);

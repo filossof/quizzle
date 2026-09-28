@@ -549,23 +549,27 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 [dir="rtl"] .slide-in { animation-name: slideInRtl; }
 @keyframes slideInRtl { from { opacity: 0; transform: translateX(80px); } to { opacity: 1; transform: none; } }
 
-/* ── Owl trash talk on the answer reveal ───────────────────────────────── */
-.reveal-talk { display: flex; flex-direction: column; gap: .5rem; min-width: 0; flex: 1; }
-.owl-talk { display: flex; align-items: flex-end; gap: .6rem; }
-.owl { font-size: clamp(2.6rem, 4.5vw, 3.6rem); line-height: 1; animation: bounce 1.6s ease-in-out infinite; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .25)); }
-.bubbles { display: flex; flex-direction: column; gap: .45rem; align-items: flex-start; min-width: 0; }
+/* ── Owl trash talk on the answer reveal: big bubbles next to the chart ── */
+.q-mid.with-talk { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+.q-mid.with-talk .chart { grid-column: auto; }
+.owl-talk { display: flex; align-items: center; gap: .8rem; min-width: 0; height: 100%; }
+.owl { font-size: clamp(3.5rem, 7vw, 6rem); line-height: 1; flex: none; align-self: flex-end; animation: bounce 1.6s ease-in-out infinite; filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .25)); }
+.bubbles { display: flex; flex-direction: column; justify-content: center; gap: .8rem; min-width: 0; flex: 1; }
 .bubble {
-  position: relative; background: #fff; color: var(--ink); font-weight: 600; font-size: clamp(1rem, 1.7vw, 1.45rem);
-  padding: .45em .9em; border-radius: 18px; box-shadow: 0 5px 0 rgba(0, 0, 0, .15); max-width: 62vw;
-  animation: bubbleIn .5s cubic-bezier(.3, 1.7, .5, 1) both;
+  position: relative; background: #fff; color: var(--ink); font-weight: 700; line-height: 1.25;
+  font-size: clamp(1.25rem, 2.3vw, 2.2rem);
+  padding: .55em 1em; border-radius: 22px; box-shadow: 0 7px 0 rgba(0, 0, 0, .15);
+  animation: bubbleIn .55s cubic-bezier(.3, 1.7, .5, 1) both;
 }
-.bubble:first-child::before {
-  content: ''; position: absolute; bottom: 10px; inset-inline-start: -9px; width: 18px; height: 18px; background: #fff;
-  clip-path: polygon(100% 0, 100% 100%, 0 100%); border-radius: 2px;
+.bubble:nth-child(2) { background: #fff6d6; }
+.bubble:nth-child(3) { background: #e6f7ff; }
+.bubble::before {
+  content: ''; position: absolute; bottom: 18px; inset-inline-start: -12px; width: 24px; height: 24px; background: inherit;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
-[dir="rtl"] .bubble:first-child::before { clip-path: polygon(0 0, 100% 100%, 0 100%); }
-@keyframes bubbleIn { from { opacity: 0; transform: scale(.3) translateY(20px); } to { opacity: 1; transform: none; } }
-.reveal-foot { align-items: flex-end; }
+[dir="rtl"] .bubble::before { clip-path: polygon(0 0, 100% 100%, 0 100%); }
+@keyframes bubbleIn { from { opacity: 0; transform: scale(.3) translateY(30px); } to { opacity: 1; transform: none; } }
+.reveal .answers .tile { min-height: clamp(56px, 8vh, 90px); }
 
 /* Boy / girl picker on the join screen */
 .gender-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }

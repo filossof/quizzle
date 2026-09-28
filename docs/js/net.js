@@ -65,6 +65,8 @@ class PlayerLink {
     this.rid = 0;
     this.lastPong = 0;
     this.onReconnect = null;
+    this.online = false;      // a connection to the host has been fully opened
+    this.connecting = false;  // a connect() is in progress; the heartbeat must leave it alone
     setInterval(() => this.heartbeat(), PING_MS);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.pin) this.heartbeat(true);
@@ -89,21 +91,31 @@ class PlayerLink {
   }
 
   /* Opens a connection to the host with this PIN. Rejects with 'no-game' if nobody is hosting it. */
-  async connect(pin) {
+  async connect(pin, timeoutMs = 10000) {
     if (this.conn?.open && this.pin === pin) return;
     this.pin = pin;
     this.onStatus('connecting');
+    this.connecting = true;
+    try {
+      await this.openConnection(pin, timeoutMs);
+    } finally {
+      this.connecting = false;
+    }
+  }
+
+  async openConnection(pin, timeoutMs) {
     const peer = await this.ensurePeer();
     this.conn?.close();
     await new Promise((resolve, reject) => {
       const conn = peer.connect(CONFIG.peerPrefix + pin, { reliable: true });
       this.conn = conn;
-      const timer = setTimeout(() => { this.failConnect = null; conn.close(); reject(new Error('timeout')); }, 7000);
+      const timer = setTimeout(() => { this.failConnect = null; conn.close(); reject(new Error('timeout')); }, timeoutMs);
       this.failConnect = err => { clearTimeout(timer); this.failConnect = null; reject(err); };
       conn.on('open', () => {
         clearTimeout(timer);
         this.failConnect = null;
         this.lastPong = Date.now();
+        this.online = true;
         this.onStatus('online');
         resolve();
       });
@@ -139,21 +151,23 @@ class PlayerLink {
   }
 
   heartbeat(urgent = false) {
-    if (!this.pin || this.reconnecting) return;
+    // Only watch connections that were fully open; never interrupt one that is still being set up.
+    if (!this.pin || this.reconnecting || this.connecting || !this.online) return;
     if (!this.conn?.open || Date.now() - this.lastPong > (urgent ? 4000 : DEAD_MS)) return this.lost();
     this.conn.send({ t: 'ping' });
   }
 
   /* Connection dropped (phone slept, Wi-Fi blip, host refreshed): keep retrying. */
   async lost() {
-    if (this.reconnecting || !this.pin) return;
+    if (this.reconnecting || this.connecting || !this.pin || !this.online) return;
+    this.online = false;
     this.reconnecting = true;
     this.onStatus('reconnecting');
     const pin = this.pin;
     for (let attempt = 0; this.pin === pin; attempt++) {
       try {
         this.conn = null;
-        await this.connect(pin);
+        await this.connect(pin, 5000); // quick retries while the host comes back
         this.reconnecting = false;
         await this.onReconnect?.();
         return;
@@ -167,6 +181,7 @@ class PlayerLink {
 
   disconnect() {
     this.pin = null;
+    this.online = false;
     this.conn?.close();
     this.conn = null;
   }

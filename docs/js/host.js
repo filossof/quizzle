@@ -357,7 +357,7 @@
         go(keyOf(s), `
           <div class="qscreen reveal">
             <div class="q-top"><h1 class="q-text" dir="auto">${esc(q.text)}</h1></div>
-            <div class="q-mid">
+            <div class="q-mid ${talk.length ? 'with-talk' : ''}">
               <div class="chart">${q.answers.map((a, i) => {
                 const st = answerStyle(q.type, i);
                 return `<div class="bar-col ${a.correct ? 'correct' : 'wrong'}">
@@ -366,19 +366,17 @@
                   <div class="bar-foot ${st.cls}"><span class="shape">${st.shape}</span>${a.correct ? '<span class="tick">✔</span>' : ''}</div>
                 </div>`;
               }).join('')}</div>
+              ${talk.length ? `<div class="owl-talk"><span class="owl">🦉</span><div class="bubbles">${talk.map((line, i) => `<div class="bubble" style="animation-delay:${1 + i * 1.5}s">${line}</div>`).join('')}</div></div>` : ''}
             </div>
             <div class="answers n${q.answers.length}">${q.answers.map((a, i) => tile(q, i, a, a.correct ? 'correct' : 'dim')).join('')}</div>
             <div class="reveal-foot">
-              <div class="reveal-talk">
-                <div class="reveal-summary bounce-in">${cheer}</div>
-                ${talk.length ? `<div class="owl-talk"><span class="owl">🦉</span><div class="bubbles">${talk.map((line, i) => `<div class="bubble" dir="auto" style="animation-delay:${1.2 + i * 1.6}s">${line}</div>`).join('')}</div></div>` : ''}
-              </div>
+              <div class="reveal-summary bounce-in">${cheer}</div>
               ${nextButton(s.qIndex + 1 >= s.total ? t('host.winners') : t('next'))}
             </div>
           </div>`);
         bindNext();
         if (got && got === s.players.length) later(500, () => confetti({ count: 120 }));
-        talk.forEach((_, i) => later(1200 + i * 1600, () => Sound.sfx('pop')));
+        talk.forEach((_, i) => later(1000 + i * 1500, () => Sound.sfx('pop')));
       },
     },
 
@@ -482,50 +480,77 @@
   }
 
   // ── Owl trash talk ──────────────────────────────────────────────────────
-  /* One friendly brag and one gentle tease after each question. Players teased in the
-     last two rounds are skipped when possible, so nobody gets picked on. */
+  /* After each question: one brag, one gentle tease, and sometimes a comment about the
+     whole room. Players teased in the last two rounds are skipped, so nobody gets picked
+     on, and lines don't repeat until the owl has used up the others. */
   let recentlyTeased = [];
-  let lastLines = [];
-  /* Picks a line that wasn't used in the previous round (tries a few times). */
-  function fresh(make) {
-    let line = make();
-    for (let i = 0; i < 5 && lastLines.includes(line); i++) line = make();
-    return line;
+  const usedLines = new Set();
+  const say = (key, p, vars = {}) => th(key, { name: p?.name, g: p?.gender, _avoid: usedLines, ...vars });
+
+  function weightedPick(options) {
+    let r = Math.random() * options.reduce((sum, o) => sum + o.w, 0);
+    return options.find(o => (r -= o.w) < 0) || options[0];
   }
+
   function trashTalk(s) {
-    const lines = talkLines(s);
-    lastLines = lines;
-    return lines;
-  }
-  function talkLines(s) {
     const players = s.players.filter(p => p.result);
     if (!players.length) return [];
+    const q = s.question;
     const good = players.filter(p => p.result.correct);
     const bad = players.filter(p => !p.result.correct);
-    if (good.length === players.length && players.length > 1) return [t('tt.allRight')];
-    if (!good.length) return [t('tt.noneRight')];
-
     const lines = [];
-    const brags = [];
-    const fastest = [...good].sort((a, b) => a.result.ms - b.result.ms)[0];
-    if (good.length > 1) brags.push(['tt.fast', fastest]);
-    for (const p of good) {
-      if (p.result.streak >= 3) brags.push(['tt.streak', p, p.result.streak]);
-      if (s.qIndex > 0 && p.prevPos - p.pos >= 2) brags.push(['tt.climb', p, p.prevPos - p.pos]);
-    }
-    if (s.qIndex > 0 && players[0].pos === 0 && players[0].prevPos === 0 && players[0].result.correct) brags.push(['tt.leader', players[0]]);
-    if (!brags.length) brags.push(['tt.fast', fastest]);
-    const [bragKey, bragP, bragN] = pick(brags);
-    lines.push(fresh(() => th(bragKey, { name: bragP.name, n: bragN, g: bragP.gender })));
 
-    // Tease only players who weren't teased in the last two rounds; otherwise stay nice.
-    const targets = bad.filter(p => !recentlyTeased.includes(p.id));
-    const target = pick(targets);
-    if (target) {
-      const key = target.result.lostStreak ? 'tt.lostStreak' : target.result.answered ? 'tt.wrong' : 'tt.sleepy';
-      lines.push(fresh(() => th(key, { name: target.name, n: target.result.lostStreak, g: target.gender })));
+    // A comment about the whole room: close race at the top, or a popular wrong answer.
+    const roomLine = () => {
+      const options = [];
+      const [first, second] = s.players;
+      if (s.qIndex >= 2 && second && second.score > 0 && first.score - second.score <= 150) {
+        options.push(() => say('tt.closeRace', first, { name2: second.name }));
+      }
+      const wrongIdx = s.reveal.counts.map((c, i) => [c, i]).filter(([, i]) => !q.answers[i].correct).sort((a, b) => b[0] - a[0])[0];
+      if (wrongIdx && wrongIdx[0] >= 2 && wrongIdx[0] >= players.length / 3) {
+        options.push(() => say('tt.sameWrong', null, { n: wrongIdx[0], answer: q.answers[wrongIdx[1]].text }));
+      }
+      return options.length ? pick(options)() : null;
+    };
+
+    if (good.length === players.length && players.length > 1) {
+      lines.push(say('tt.allRight'));
+    } else if (!good.length) {
+      lines.push(say('tt.noneRight'));
+    } else {
+      // Brag: rarer moments are more likely to be picked than "fastest".
+      const brags = [];
+      const limit = q.timeLimit * 1000;
+      const fastest = [...good].sort((a, b) => a.result.ms - b.result.ms)[0];
+      if (good.length > 1) brags.push({ w: 1, key: 'tt.fast', p: fastest });
+      if (good.length === 1 && players.length >= 3) brags.push({ w: 4, key: 'tt.lone', p: good[0] });
+      for (const p of good) {
+        if (p.result.streak >= 3) brags.push({ w: 2, key: 'tt.streak', p, n: p.result.streak });
+        if (s.qIndex > 0 && p.prevPos - p.pos >= 2) brags.push({ w: 2, key: 'tt.climb', p, n: p.prevPos - p.pos });
+        if (p.result.comeback) brags.push({ w: 1.5, key: 'tt.comeback', p });
+        if (limit >= 10000 && p.result.ms > limit - 2000) brags.push({ w: 2.5, key: 'tt.lastSecond', p });
+        if (s.qIndex >= 3 && p.correct === s.qIndex + 1) brags.push({ w: 2, key: 'tt.perfect', p, n: p.correct });
+      }
+      const leader = s.players[0];
+      if (s.qIndex > 0 && leader.pos === 0 && leader.prevPos === 0 && leader.result?.correct) brags.push({ w: 1, key: 'tt.leader', p: leader });
+      if (!brags.length) brags.push({ w: 1, key: 'tt.fast', p: fastest });
+      const brag = weightedPick(brags);
+      lines.push(say(brag.key, brag.p, { n: brag.n }));
+
+      // Tease: only players who weren't teased in the last two rounds.
+      const target = pick(bad.filter(p => !recentlyTeased.includes(p.id)));
+      if (target) {
+        const key = target.result.lostStreak ? 'tt.lostStreak' : target.result.answered ? 'tt.wrong' : 'tt.sleepy';
+        lines.push(say(key, target, { n: target.result.lostStreak }));
+      }
+      recentlyTeased = [target?.id, ...recentlyTeased].slice(0, 2);
     }
-    recentlyTeased = [target?.id, ...recentlyTeased].slice(0, 2);
+
+    if (lines.length < 3 && Math.random() < 0.6) {
+      const extra = roomLine();
+      if (extra) lines.push(extra);
+    }
     return lines;
   }
 

@@ -203,7 +203,12 @@ class Game {
         p.streak = 0;
       }
       p.score += points;
-      p.result = { answered: !!p.answer, correct, points, streak: p.streak, ms: p.answer?.ms ?? null, lostStreak: !correct && prevStreak >= 2 ? prevStreak : 0 };
+      p.result = {
+        answered: !!p.answer, correct, points, streak: p.streak, ms: p.answer?.ms ?? null,
+        lostStreak: !correct && prevStreak >= 2 ? prevStreak : 0,
+        comeback: correct && this.qIndex > 0 && !!p.missedLast,
+      };
+      p.missedLast = !correct;
     }
 
     this.rankPlayers();
