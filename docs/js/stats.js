@@ -12,12 +12,14 @@
     const abs = Math.abs(diff);
     if (abs < 90000) return t('s.justNow');
     if (abs >= 30 * DAY) {
-      // Months are phrased by hand: some browsers add a stray "(2)" to the Hebrew "two months ago".
       const n = Math.round(abs / (30 * DAY));
       return t('s.monthsAgo', { n });
     }
     const [unit, size] = abs < 3600000 ? ['minute', 60000] : abs < DAY ? ['hour', 3600000] : ['day', DAY];
-    return rtf.format(Math.round(diff / size), unit);
+    const n = Math.round(abs / size);
+    // Hebrew is phrased by hand: Chrome adds a stray "(1)" / "(2)" to some Hebrew phrases.
+    if (LANG === 'he') return t(`s.ago.${unit}`, { n });
+    return rtf.format(-n, unit);
   }
   const shortDate = ms => new Date(ms).toLocaleDateString(LANG === 'he' ? 'he-IL' : 'en-GB', { day: 'numeric', month: 'numeric' });
 
@@ -148,7 +150,7 @@
           <thead><tr><th>${t('s.colPerson')}</th><th>${t('s.colJoined')}</th><th>${t('s.colLast')}</th><th class="num">${t('s.colQuizzes')}</th><th class="num">${t('s.colGames')}</th><th class="num">${t('s.colPlayers')}</th></tr></thead>
           <tbody>${list.map((p, i) => `
             <tr class="s-person" data-i="${i}">
-              <td><div class="s-who">${avatar(p)}<div><div class="s-name" dir="auto">${esc(p.name || p.email || p.uid)}</div><div class="s-email" dir="ltr">${esc(p.email || '')}</div></div></div></td>
+              <td><div class="s-who">${avatar(p)}<div><div class="s-name bidi">${esc(p.name || p.email || p.uid)}</div><div class="s-email bidi">${esc(p.email || '')}</div></div></div></td>
               <td>${p.joinedAt ? ago(p.joinedAt) : t('s.never')}</td>
               <td>${ago(p.lastSeen)}</td>
               <td class="num">${p.quizzes.length}</td>
@@ -165,7 +167,7 @@
         <h2>${t('s.recent')}</h2>
         ${recent.length ? `<div class="s-table-wrap"><table class="s-table">
           <thead><tr><th>${t('s.colWhen')}</th><th>${t('s.colHost')}</th><th>${t('s.colQuiz')}</th><th class="num">${t('s.colPlayers')}</th></tr></thead>
-          <tbody>${recent.map(g => `<tr><td>${ago(g.at)}</td><td dir="auto">${esc(people.get(g.owner)?.name || '')}</td><td dir="auto">${esc(g.quizTitle)}</td><td class="num">${g.players}</td></tr>`).join('')}</tbody>
+          <tbody>${recent.map(g => `<tr><td>${ago(g.at)}</td><td class="bidi">${esc(people.get(g.owner)?.name || '')}</td><td class="bidi">${esc(g.quizTitle)}</td><td class="num">${g.players}</td></tr>`).join('')}</tbody>
         </table></div>` : `<p class="s-muted">${t('s.noGames')}</p>`}
       </section>`;
 

@@ -689,3 +689,9 @@ button.quiz-card { padding-bottom: 1.25rem; }
 .s-quiz { background: #f1ecff; border-radius: 999px; padding: .25em .8em; font-weight: 500; }
 .s-quiz small { color: var(--s-muted); }
 @media (max-width: 600px) { .s-tile.hero { grid-column: span 1; } }
+
+/* Text whose language may differ from the page (names, emails, titles): render it in its own
+   direction, but keep it aligned to the page's side. */
+.bidi { unicode-bidi: plaintext; }
+[dir="rtl"] .bidi { text-align: right; }
+[dir="ltr"] .bidi { text-align: left; }
