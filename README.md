@@ -13,23 +13,17 @@ A colorful, kid-friendly live quiz game in the style of Kahoot. Show the host sc
 - Hebrew (default, right-to-left) and English interface, switchable with the 🌐 button on every page
 - Phones and the host can refresh or drop Wi-Fi and reconnect automatically
 
-## How it works (no server needed)
+## How it works (no server of our own)
 
 Quizzle is a static site on **GitHub Pages**.
 
 - **The host's browser is the game server.** It registers the Game PIN on the free public [PeerJS](https://peerjs.com) relay (no account needed), and phones connect directly to it over WebRTC. Keep the host tab open and visible during a game.
-- **Quizzes are private.** They're stored in a separate **private** repo, `quizzle-data` (`quizzes.json` plus pictures in `img/`). The Quiz Studio saves by committing to it through the GitHub API, so every change is kept in git history and nothing gets wiped. This public repo holds only the game code.
+- **Everyone has their own private quizzes.** Hosts and quiz makers **sign in with Google**; quizzes and pictures are stored in **Firebase Firestore** (project `quizzle-a3132`, free Spark plan) under the owner's account. The rules in [`firestore.rules`](firestore.rules) make Google's servers refuse any read or write of a quiz that isn't yours. Players on phones never sign in.
+- **Sharing:** the 🔗 button on a quiz creates a link. A friend who opens it signs in and gets their own copy (with its own copy of the pictures). The original stays yours.
 
-### Unlocking hosting and the Quiz Studio
+### Changing the database rules
 
-Hosting and editing both need a GitHub key that can access `quizzle-data`. Enter it once per device; both pages share it:
-
-1. Open https://github.com/settings/personal-access-tokens/new
-2. **Repository access** → Only select repositories → `quizzle-data`
-3. **Permissions** → Repository permissions → **Contents: Read and write**
-4. Generate the token and paste it into the host page or the studio
-
-Without the key, nobody can see, host or edit your quizzes. Players never need one: they just join with the PIN.
+The rules live in `firestore.rules`. After changing them, paste them into the Firebase console (**Firestore Database → Rules → Publish**).
 
 ## Files
 
@@ -41,9 +35,11 @@ Without the key, nobody can see, host or edit your quizzes. Players never need o
 | `docs/js/game.js` | Game engine (runs in the host's browser) |
 | `docs/js/net.js` | Peer-to-peer connection and auto-reconnect |
 | `docs/js/audio.js` | Web Audio synthesizer for sound effects and music |
-| `docs/js/github.js` | Reads and saves quizzes in the private data repo |
+| `docs/js/store.js` | Firebase: sign-in, saving quizzes and pictures, share links |
+| `docs/js/auth-ui.js` | "Sign in with Google" screen and the signed-in chip |
 | `docs/js/i18n.js` | Hebrew and English text, including the owl's jokes |
-| `docs/js/config.js` | Name of the private data repo |
+| `docs/js/config.js` | Firebase project settings |
+| `firestore.rules` | Who can read and write what in the database |
 
 ## Publishing changes
 
@@ -54,3 +50,5 @@ Run `npm run stamp` before committing. It adds a version tag to every script and
 ```bash
 npm start   # then open http://localhost:8080/host.html
 ```
+
+To test without touching the real database, run the Firebase emulators (`firebase emulators:start --only auth,firestore`, needs Java) and set `localStorage['quizzle.emulator'] = '1'` in the browser on localhost.

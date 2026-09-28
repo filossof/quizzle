@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(data) { return signedIn() && data.owner == request.auth.uid; }
+
+    // Quizzes: only the owner can see or change them.
+    match /quizzes/{id} {
+      allow read, delete: if owns(resource.data);
+      allow create: if owns(request.resource.data);
+      allow update: if owns(resource.data) && owns(request.resource.data);
+    }
+
+    // Pictures: listing is owner-only. Fetching one picture by its exact (unguessable) id is
+    // allowed for signed-in users, so a shared quiz copy can bring its pictures along.
+    match /images/{id} {
+      allow get: if signedIn();
+      allow list, delete: if owns(resource.data);
+      allow create: if owns(request.resource.data);
+      allow update: if owns(resource.data) && owns(request.resource.data);
+    }
+
+    // "Share a copy" links: open one by its exact id to copy the quiz into your own account.
+    // Shares can't be listed, so nobody can browse other people's shares.
+    match /shares/{id} {
+      allow get: if signedIn();
+      allow create: if owns(request.resource.data);
+      allow delete: if owns(resource.data);
+    }
+  }
+}

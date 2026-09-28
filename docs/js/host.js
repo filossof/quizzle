@@ -71,7 +71,7 @@
   /* Downloads the quiz's pictures from the private repo so the big screen can show them. */
   async function withImages(quiz) {
     await Promise.all(quiz.questions.map(async q => {
-      q.imageUrl = q.image ? await GitHub.imageUrl(q.image).catch(() => '') : '';
+      q.imageUrl = q.image ? await Store.imageUrl(q.image).catch(() => '') : '';
     }));
     return quiz;
   }
@@ -113,7 +113,7 @@
   async function resume(snap) {
     go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>${t('host.resuming')}</h1><p>${t('host.pin', { pin: esc(snap.pin) })}</p></div>`);
     try {
-      if (GitHub.token) await withImages(snap.quiz);
+      if (await Store.ready) await withImages(snap.quiz);
       net = await goOnline(snap.pin, 8);
       game = Game.restore(snap, handlers);
       game.syncHost();
@@ -152,29 +152,27 @@
   // ── Quiz picker ─────────────────────────────────────────────────────────
   function showLocked(error) {
     screenKey = 'locked';
-    GitHub.showKeyForm(app, {
+    showSignIn(app, {
       title: t('host.lockedTitle'),
       intro: t('host.lockedIntro'),
-      write: false,
-      error,
-      onConnected: showPicker,
+      onSignedIn: showPicker,
+      backLink: `<a class="link-btn" href="admin.html">${t('host.adminLink')}</a>`,
     });
   }
 
   async function showPicker() {
     updateControls();
     Sound.music('lobby');
-    if (!GitHub.token) return showLocked();
+    if (!(await Store.ready)) return showLocked();
     go('picker', `
       <div class="picker">
-        <header class="picker-head">${logoHtml('xl')}<p class="tagline">${t('host.tagline')}</p></header>
+        <header class="picker-head">${logoHtml('xl')}<p class="tagline">${t('host.tagline')}</p>${userChip()}</header>
         <div class="quiz-grid"><div class="loading">${t('host.loading')}</div></div>
         <a class="admin-link" href="admin.html">${t('host.adminLink')}</a>
       </div>`);
     try {
-      quizzes = await GitHub.list();
+      quizzes = await Store.list();
     } catch (err) {
-      if ([401, 403, 404].includes(err.status)) { GitHub.forget(); return showLocked(err.message); }
       quizzes = [];
       toast(err.message);
     }

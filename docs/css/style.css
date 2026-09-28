@@ -186,7 +186,8 @@ button.quiz-card:hover { transform: translateY(-6px) rotate(-1deg); box-shadow: 
 .ctl:hover { background: rgba(255, 255, 255, .3); }
 .ctl:active { transform: scale(.92); }
 .ctl.off { opacity: .45; text-decoration: line-through; }
-.ctl.unlock { background: var(--yellow-btn); color: var(--ink); font-size: 1rem; font-weight: 600; animation: beat 1.2s ease-in-out infinite alternate; }
+.ctl.unlock { background: var(--yellow-btn); color: var(--ink); font-size: 1rem; font-weight: 600; animation: nudge 1.2s ease-in-out infinite alternate; }
+@keyframes nudge { from { transform: scale(1); } to { transform: scale(1.06); } }
 .ctl.mini { position: fixed; bottom: 16px; right: 16px; z-index: 50; height: 40px; min-width: 40px; font-size: 1rem; }
 body:has(.p-foot) #p-sound { display: none; }
 .pf-sound { border: 0; background: #f1ecff; border-radius: 10px; font-size: 1rem; height: 34px; width: 38px; flex: none; cursor: pointer; margin-left: auto; margin-right: .5rem; }
@@ -604,3 +605,38 @@ button.quiz-card { padding-bottom: 1.25rem; }
 /* Big screens (TVs, 4K monitors): scale the whole host screen up with the display, so the
    owl, bubbles, buttons and text don't shrink into a sea of empty space. 16px up to ~1080p. */
 .host-page { font-size: clamp(16px, calc(.55vw + .55vh), 34px); }
+
+/* ── Sign in with Google ───────────────────────────────────────────────── */
+.signin-card { width: min(460px, 100%); text-align: center; }
+.google-btn {
+  display: flex; align-items: center; justify-content: center; gap: .7rem; width: 100%;
+  font: inherit; font-size: 1.2rem; font-weight: 600; color: #1f1f1f; cursor: pointer;
+  background: #fff; border: 2px solid #dadce0; border-radius: 999px; padding: .75em 1.2em;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .08); transition: background .15s, transform .1s;
+}
+.google-btn:hover { background: #f7f8fa; }
+.google-btn:active { transform: translateY(2px); }
+.google-btn:disabled { opacity: .6; cursor: wait; }
+.user-chip {
+  display: inline-flex; align-items: center; gap: .45rem; background: rgba(255, 255, 255, .18); color: #fff;
+  border-radius: 999px; padding: .25rem .35rem .25rem .8rem; font-weight: 600; font-size: .95rem; white-space: nowrap;
+}
+[dir="rtl"] .user-chip { padding: .25rem .8rem .25rem .35rem; }
+.user-chip img, .user-dot { width: 1.9rem; height: 1.9rem; border-radius: 50%; display: grid; place-items: center; }
+.user-out { font: inherit; font-size: .85rem; border: 0; border-radius: 999px; padding: .35em .8em; cursor: pointer; background: #fff; color: var(--ink); }
+.picker-head .user-chip { margin-top: 1rem; }
+
+/* ── Move quizzes from GitHub / share links ────────────────────────────── */
+.migrate-card {
+  display: flex; align-items: center; gap: 1rem; background: #fff; color: var(--ink); border-radius: 20px;
+  padding: 1rem 1.3rem; margin-bottom: 1.5rem; box-shadow: 0 6px 0 rgba(0, 0, 0, .15); border-inline-start: 10px solid var(--yellow-btn);
+}
+.migrate-card > div:nth-child(2) { flex: 1; }
+.migrate-card p { margin: .2rem 0 0; color: var(--muted); }
+.share-link { width: 100%; font: inherit; font-size: 1rem; padding: .7em; border: 2px solid #e3def5; border-radius: 12px; color: var(--ink); }
+.modal-actions { display: flex; gap: .6rem; justify-content: flex-end; }
+.share-card { text-align: center; align-items: center; }
+.share-card .qc-emoji { font-size: 4rem; }
+.share-card .qc-title { font-size: 1.6rem; font-weight: 700; }
+.share-card .qc-desc { color: var(--muted); }
+.dark-link { color: var(--ink); margin-top: 0; }
