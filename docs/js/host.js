@@ -384,7 +384,7 @@
       enter(s) {
         Sound.music('lobby');
         const top = s.players.slice(0, 5);
-        const ROW = 84;
+        const ROW = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) * 5.25); // matches .sb-row height + gap
         const before = [...top].sort((a, b) => a.prevPos - b.prevPos);
         go(keyOf(s), `
           <div class="scoreboard">

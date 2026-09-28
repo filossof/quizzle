@@ -4,7 +4,8 @@
   "description": "A colorful, kid-friendly live quiz game. Host on a big screen, play from phones. Runs on GitHub Pages.",
   "private": true,
   "scripts": {
-    "start": "node dev-server.js"
+    "start": "node dev-server.js",
+    "stamp": "node stamp.js"
   },
   "license": "MIT"
 }

@@ -45,6 +45,10 @@ Without the key, nobody can see, host or edit your quizzes. Players never need o
 | `docs/js/i18n.js` | Hebrew and English text, including the owl's jokes |
 | `docs/js/config.js` | Name of the private data repo |
 
+## Publishing changes
+
+Run `npm run stamp` before committing. It adds a version tag to every script and stylesheet link, so browsers never mix old cached files with new ones.
+
 ## Local testing
 
 ```bash
