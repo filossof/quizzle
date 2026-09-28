@@ -577,3 +577,7 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 
 .lang-pick { display: flex; flex-direction: column; gap: .25rem; font-weight: 500; font-size: .9rem; }
 .lang-pick select { font: inherit; font-size: 1rem; border: 0; border-radius: 10px; padding: .45em .6em; color: var(--ink); background: #fff; cursor: pointer; }
+
+/* Keep the card's description clear of the Play button */
+.quiz-card .qc-meta { margin-top: auto; padding-top: 1rem; }
+button.quiz-card { padding-bottom: 1.25rem; }
