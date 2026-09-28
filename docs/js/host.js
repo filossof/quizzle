@@ -29,7 +29,7 @@
     game.hostAction(name, playerId);
   }
 
-  function nextButton(label = 'Next ▶') {
+  function nextButton(label = t('next')) {
     return `<button class="btn big primary next-btn" id="next">${label}</button>`;
   }
   function bindNext() {
@@ -78,9 +78,9 @@
 
   async function createGame(quizId) {
     const found = quizzes.find(q => q.id === quizId);
-    if (!found) return toast('That quiz could not be found.');
+    if (!found) return toast(t('host.notFound'));
     Sound.sfx('pop');
-    go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>Getting the game ready…</h1></div>`);
+    go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>${t('host.preparing')}</h1></div>`);
     const quiz = await withImages(structuredClone(found));
     for (let tries = 0; tries < 5; tries++) {
       const pin = String(100000 + Math.floor(Math.random() * 900000));
@@ -97,7 +97,7 @@
   }
 
   async function resume(snap) {
-    go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>Reconnecting your game…</h1><p>Game PIN ${esc(snap.pin)}</p></div>`);
+    go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>${t('host.resuming')}</h1><p>${t('host.pin', { pin: esc(snap.pin) })}</p></div>`);
     try {
       if (GitHub.token) await withImages(snap.quiz);
       net = await goOnline(snap.pin, 8);
@@ -105,12 +105,12 @@
       game.syncHost();
     } catch (err) {
       saveSnapshot(null);
-      toast('Could not bring back the last game. Start a new one!');
+      toast(t('host.resumeFailed'));
       showPicker();
     }
   }
 
-  function endGame(reason = 'The host ended the game.') {
+  function endGame(reason = 'ended.byHost') {
     game?.end(reason);
     const n = net;
     setTimeout(() => n?.destroy(), 400); // let the "ended" messages go out first
@@ -123,24 +123,24 @@
     go('offline', `
       <div class="center-msg">
         <div class="big-emoji">📶</div>
-        <h1>Couldn't start the game</h1>
-        <p>Check the internet connection and try again.</p>
-        <button class="btn primary big" id="retry">Try again</button>
+        <h1>${t('host.offlineTitle')}</h1>
+        <p>${t('host.offlineText')}</p>
+        <button class="btn primary big" id="retry">${t('tryAgain')}</button>
       </div>`);
     $('#retry').onclick = showPicker;
   }
 
   addEventListener('pagehide', () => net?.broadcast({ t: 'host-reload' }));
   addEventListener('beforeunload', e => {
-    if (game && game.phase !== 'podium') e.preventDefault();
+    if (game && game.phase !== 'podium' && !switching) e.preventDefault();
   });
 
   // ── Quiz picker ─────────────────────────────────────────────────────────
   function showLocked(error) {
     screenKey = 'locked';
     GitHub.showKeyForm(app, {
-      title: '🔒 This Quizzle is private',
-      intro: 'Only the quiz owner can host these games. Paste your GitHub key to unlock hosting on this device.',
+      title: t('host.lockedTitle'),
+      intro: t('host.lockedIntro'),
       write: false,
       error,
       onConnected: showPicker,
@@ -153,9 +153,9 @@
     if (!GitHub.token) return showLocked();
     go('picker', `
       <div class="picker">
-        <header class="picker-head">${logoHtml('xl')}<p class="tagline">Pick a quiz and let's play!</p></header>
-        <div class="quiz-grid"><div class="loading">Loading quizzes…</div></div>
-        <a class="admin-link" href="admin.html">✏️ Create or edit quizzes</a>
+        <header class="picker-head">${logoHtml('xl')}<p class="tagline">${t('host.tagline')}</p></header>
+        <div class="quiz-grid"><div class="loading">${t('host.loading')}</div></div>
+        <a class="admin-link" href="admin.html">${t('host.adminLink')}</a>
       </div>`);
     try {
       quizzes = await GitHub.list();
@@ -172,10 +172,10 @@
           <span class="qc-emoji">${esc(q.emoji)}</span>
           <span class="qc-title" dir="auto">${esc(q.title)}</span>
           <span class="qc-desc" dir="auto">${esc(q.description)}</span>
-          <span class="qc-meta">${q.questions.length} question${q.questions.length === 1 ? '' : 's'}</span>
-          <span class="qc-play">Play ▶</span>
+          <span class="qc-meta">${t('nQuestions', { n: q.questions.length })}</span>
+          <span class="qc-play">${t('host.play')}</span>
         </button>`).join('')
-      : `<div class="empty">No quizzes yet! <a href="admin.html">Make your first one →</a></div>`;
+      : `<div class="empty">${t('host.empty')} <a href="admin.html">${t('host.makeFirst')}</a></div>`;
     grid.onclick = e => {
       const card = e.target.closest('.quiz-card');
       if (card) createGame(card.dataset.id);
@@ -203,8 +203,8 @@
   }
 
   function pointsBadge(q) {
-    if (q.points === 2) return '<div class="badge double">⭐ Double points! ⭐</div>';
-    if (q.points === 0) return '<div class="badge nopoints">🎈 Just for fun: no points</div>';
+    if (q.points === 2) return `<div class="badge double">${t('host.double')}</div>`;
+    if (q.points === 0) return `<div class="badge nopoints">${t('host.noPoints')}</div>`;
     return '';
   }
 
@@ -225,24 +225,24 @@
           <div class="lobby">
             <div class="join-panel slide-down">
               <div class="join-info">
-                <div class="join-step">📱 Go to <b>${esc(url)}</b></div>
-                <div class="join-step">🔢 Game PIN:</div>
-                <div class="pin">${s.pin.slice(0, 3)}&thinsp;${s.pin.slice(3)}</div>
+                <div class="join-step">${t('host.goTo')} <b dir="ltr">${esc(url)}</b></div>
+                <div class="join-step">${t('host.pinStep')}</div>
+                <div class="pin" dir="ltr">${s.pin.slice(0, 3)}&thinsp;${s.pin.slice(3)}</div>
               </div>
-              <div class="qr" title="Scan to join">${qrSvg(`${s.joinUrl}?pin=${s.pin}`)}</div>
+              <div class="qr" title="${t('host.scan')}">${qrSvg(`${s.joinUrl}?pin=${s.pin}`)}</div>
             </div>
             <div class="lobby-bar">
-              <div class="player-count"><span class="n">0</span><small>players</small></div>
+              <div class="player-count"><span class="n">0</span><small>${t('host.players')}</small></div>
               <div class="lobby-title" dir="auto">${esc(s.emoji)} ${esc(s.title)}</div>
-              <button class="btn big primary" id="start">Start ▶</button>
+              <button class="btn big primary" id="start">${t('host.start')}</button>
             </div>
             <div class="player-cloud"></div>
-            <div class="lobby-empty">Waiting for players<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
+            <div class="lobby-empty">${t('host.waiting')}<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
           </div>`);
         $('#start').onclick = () => { $('#start').disabled = true; Sound.sfx('start'); action('start'); };
         $('.player-cloud').onclick = e => {
           const chip = e.target.closest('.player-chip');
-          if (chip && confirm(`Remove "${chip.dataset.name}" from the game?`)) action('kick', chip.dataset.id);
+          if (chip && confirm(t('host.kickConfirm', { name: chip.dataset.name }))) action('kick', chip.dataset.id);
         };
         this.update(s);
       },
@@ -284,7 +284,7 @@
         const q = s.question;
         go(keyOf(s), `
           <div class="intro">
-            <div class="intro-count bounce-in">Question ${s.qIndex + 1} <small>of ${s.total}</small></div>
+            <div class="intro-count bounce-in">${t('host.qOf', { n: s.qIndex + 1, total: s.total })}</div>
             <h1 class="intro-text zoom-in" dir="auto">${esc(q.text)}</h1>
             ${pointsBadge(q)}
             <div class="intro-bar"><div style="animation-duration:${s.remainingMs}ms"></div></div>
@@ -304,10 +304,10 @@
             <div class="q-mid">
               <div class="timer"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="prog" cx="50" cy="50" r="44"/></svg><span class="num">${q.timeLimit}</span></div>
               <div class="q-media">${media(q, s)}</div>
-              <div class="answered"><span class="n">0</span><small>answers</small></div>
+              <div class="answered"><span class="n">0</span><small>${t('host.answers')}</small></div>
             </div>
             <div class="answers n${q.answers.length}">${q.answers.map((a, i) => tile(q, i, a)).join('')}</div>
-            <button class="btn dark skip" id="next">Skip ⏭</button>
+            <button class="btn dark skip" id="next">${t('host.skip')}</button>
           </div>`);
         bindNext();
         const timer = $('.timer'), ring = $('.timer .prog'), num = $('.timer .num');
@@ -348,9 +348,10 @@
         const q = s.question, r = s.reveal;
         const max = Math.max(1, ...r.counts);
         const got = s.players.filter(p => p.result?.correct).length;
-        const cheer = s.players.length && got === s.players.length ? '🎉 Everyone got it right! 🎉'
-          : got === 0 ? '😮 Tricky one! Nobody got it.'
-            : `🎯 ${got} of ${s.players.length} got it right!`;
+        const cheer = s.players.length && got === s.players.length ? t('host.allRight')
+          : got === 0 ? t('host.noneRight')
+            : t('host.someRight', { got, total: s.players.length });
+        const talk = trashTalk(s);
         go(keyOf(s), `
           <div class="qscreen reveal">
             <div class="q-top"><h1 class="q-text" dir="auto">${esc(q.text)}</h1></div>
@@ -365,10 +366,17 @@
               }).join('')}</div>
             </div>
             <div class="answers n${q.answers.length}">${q.answers.map((a, i) => tile(q, i, a, a.correct ? 'correct' : 'dim')).join('')}</div>
-            <div class="reveal-foot"><div class="reveal-summary bounce-in">${cheer}</div>${nextButton(s.qIndex + 1 >= s.total ? 'Winners 🏆' : 'Next ▶')}</div>
+            <div class="reveal-foot">
+              <div class="reveal-talk">
+                <div class="reveal-summary bounce-in">${cheer}</div>
+                ${talk.length ? `<div class="owl-talk"><span class="owl">🦉</span><div class="bubbles">${talk.map((line, i) => `<div class="bubble" dir="auto" style="animation-delay:${1.2 + i * 1.6}s">${line}</div>`).join('')}</div></div>` : ''}
+              </div>
+              ${nextButton(s.qIndex + 1 >= s.total ? t('host.winners') : t('next'))}
+            </div>
           </div>`);
         bindNext();
         if (got && got === s.players.length) later(500, () => confetti({ count: 120 }));
+        talk.forEach((_, i) => later(1200 + i * 1600, () => Sound.sfx('pop')));
       },
     },
 
@@ -380,7 +388,7 @@
         const before = [...top].sort((a, b) => a.prevPos - b.prevPos);
         go(keyOf(s), `
           <div class="scoreboard">
-            <h1 class="sb-title bounce-in">🏅 Scoreboard</h1>
+            <h1 class="sb-title bounce-in">${t('host.scoreboard')}</h1>
             <div class="sb-list" style="height:${top.length * ROW}px">
               ${before.map((p, i) => `
                 <div class="sb-row slide-in" data-id="${p.id}" style="top:${i * ROW}px;animation-delay:${i * 90}ms;--c:${colorFor(p.name)}">
@@ -415,7 +423,7 @@
             ${p ? `<div class="pl-player">
               <div class="pl-av">${esc(p.avatar)}</div>
               <div class="pl-name" dir="auto">${esc(p.name)}</div>
-              <div class="pl-score">${p.score.toLocaleString()} pts · ${p.correct}/${s.total} ✔</div>
+              <div class="pl-score">${p.score.toLocaleString()} ${t('host.pts')} · ${p.correct}/${s.total} ✔</div>
             </div>` : '<div class="pl-player"></div>'}
             <div class="pl-block"><span class="medal">${['🥇', '🥈', '🥉'][n - 1]}</span></div>
           </div>`;
@@ -424,8 +432,8 @@
             <h1 class="pd-title bounce-in" dir="auto">${esc(s.emoji)} ${esc(s.title)}</h1>
             <div class="podium">${place(p2, 2)}${place(p1, 1)}${place(p3, 3)}</div>
             <div class="pd-actions" hidden>
-              <button class="btn" id="results">📋 All results</button>
-              <button class="btn primary big" id="again">🔁 Play again</button>
+              <button class="btn" id="results">${t('host.results')}</button>
+              <button class="btn primary big" id="again">${t('host.playAgain')}</button>
             </div>
           </div>`);
         const show = n => { $(`.place-${n}`).classList.add('show'); Sound.sfx('pop'); };
@@ -447,7 +455,7 @@
           $('.pd-actions').hidden = false;
         });
         $('#again').onclick = () => {
-          endGame('Thanks for playing! 🎉');
+          endGame('ended.thanks');
           showPicker();
         };
         $('#results').onclick = () => showResults(s);
@@ -460,36 +468,90 @@
     modal.className = 'modal-bg';
     modal.innerHTML = `
       <div class="modal pop-in">
-        <h2>📋 Final results</h2>
+        <h2>${t('host.finalResults')}</h2>
         <table class="results">
-          <thead><tr><th>#</th><th>Player</th><th>Correct</th><th>Score</th></tr></thead>
-          <tbody>${s.players.map(p => `<tr><td>${p.rank}</td><td>${esc(p.avatar)} ${esc(p.name)}</td><td>${p.correct}/${s.total}</td><td>${p.score.toLocaleString()}</td></tr>`).join('')}</tbody>
+          <thead><tr><th>#</th><th>${t('host.colPlayer')}</th><th>${t('host.colCorrect')}</th><th>${t('host.colScore')}</th></tr></thead>
+          <tbody>${s.players.map(p => `<tr><td>${p.rank}</td><td dir="auto">${esc(p.avatar)} ${esc(p.name)}</td><td>${p.correct}/${s.total}</td><td>${p.score.toLocaleString()}</td></tr>`).join('')}</tbody>
         </table>
-        <button class="btn primary">Close</button>
+        <button class="btn primary">${t('close')}</button>
       </div>`;
     modal.onclick = e => { if (e.target === modal || e.target.matches('.btn')) modal.remove(); };
     document.body.append(modal);
   }
 
+  // ── Owl trash talk ──────────────────────────────────────────────────────
+  /* One friendly brag and one gentle tease after each question. Players teased in the
+     last two rounds are skipped when possible, so nobody gets picked on. */
+  let recentlyTeased = [];
+  let lastLines = [];
+  /* Picks a line that wasn't used in the previous round (tries a few times). */
+  function fresh(make) {
+    let line = make();
+    for (let i = 0; i < 5 && lastLines.includes(line); i++) line = make();
+    return line;
+  }
+  function trashTalk(s) {
+    const lines = talkLines(s);
+    lastLines = lines;
+    return lines;
+  }
+  function talkLines(s) {
+    const players = s.players.filter(p => p.result);
+    if (!players.length) return [];
+    const good = players.filter(p => p.result.correct);
+    const bad = players.filter(p => !p.result.correct);
+    if (good.length === players.length && players.length > 1) return [t('tt.allRight')];
+    if (!good.length) return [t('tt.noneRight')];
+
+    const lines = [];
+    const brags = [];
+    const fastest = [...good].sort((a, b) => a.result.ms - b.result.ms)[0];
+    if (good.length > 1) brags.push(['tt.fast', fastest]);
+    for (const p of good) {
+      if (p.result.streak >= 3) brags.push(['tt.streak', p, p.result.streak]);
+      if (s.qIndex > 0 && p.prevPos - p.pos >= 2) brags.push(['tt.climb', p, p.prevPos - p.pos]);
+    }
+    if (s.qIndex > 0 && players[0].pos === 0 && players[0].prevPos === 0 && players[0].result.correct) brags.push(['tt.leader', players[0]]);
+    if (!brags.length) brags.push(['tt.fast', fastest]);
+    const [bragKey, bragP, bragN] = pick(brags);
+    lines.push(fresh(() => th(bragKey, { name: bragP.name, n: bragN })));
+
+    // Tease only players who weren't teased in the last two rounds; otherwise stay nice.
+    const targets = bad.filter(p => !recentlyTeased.includes(p.id));
+    const target = pick(targets);
+    if (target) {
+      const key = target.result.lostStreak ? 'tt.lostStreak' : target.result.answered ? 'tt.wrong' : 'tt.sleepy';
+      lines.push(fresh(() => th(key, { name: target.name, n: target.result.lostStreak })));
+    }
+    recentlyTeased = [target?.id, ...recentlyTeased].slice(0, 2);
+    return lines;
+  }
+
+  // Switching language reloads the page; the running game comes back from its snapshot.
+  window.beforeLangSwitch = () => {
+    if (game && game.phase !== 'podium' && !confirm(t('host.langConfirm'))) return;
+    switching = true;
+    setLang(LANG === 'he' ? 'en' : 'he');
+  };
+  let switching = false;
+
   // ── Top-right controls ──────────────────────────────────────────────────
   function setupControls() {
     const c = $('#controls');
     c.innerHTML = `
-      <button class="ctl unlock" id="c-unlock" title="Enable sound">🔈 Tap for sound</button>
-      <button class="ctl" id="c-music" title="Music on/off">🎵</button>
-      <button class="ctl" id="c-sound" title="Sound on/off">🔊</button>
-      <button class="ctl" id="c-full" title="Full screen">⛶</button>
-      <button class="ctl" id="c-end" title="End game" hidden>✖</button>`;
+      <button class="ctl unlock" id="c-unlock">${t('host.tapSound')}</button>
+      ${langButton()}
+      <button class="ctl" id="c-sound" title="${t('sound')}">🔊</button>
+      <button class="ctl" id="c-full" title="${t('host.fullscreen')}">⛶</button>
+      <button class="ctl" id="c-end" title="${t('host.endGame')}" hidden>✖</button>`;
     const paint = () => {
-      $('#c-music').classList.toggle('off', !Sound.musicOn);
       $('#c-sound').classList.toggle('off', !Sound.soundOn);
       $('#c-sound').textContent = Sound.soundOn ? '🔊' : '🔇';
     };
-    $('#c-music').onclick = () => { Sound.toggleMusic(); paint(); };
     $('#c-sound').onclick = () => { Sound.toggleSound(); paint(); };
     $('#c-full').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
     $('#c-end').onclick = () => {
-      if (!confirm('End this game for everyone?')) return;
+      if (!confirm(t('host.endConfirm'))) return;
       endGame();
       showPicker();
     };

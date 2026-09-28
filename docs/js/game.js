@@ -49,7 +49,7 @@ class Game {
     const player = this.players.get(this.byConn.get(connId));
     switch (msg.t) {
       case 'check':
-        return reply(this.phase === 'podium' ? { error: 'That game has already finished.' } : { ok: true, title: this.quiz.title });
+        return reply(this.phase === 'podium' ? { error: 'err.finished' } : { ok: true, title: this.quiz.title });
       case 'join': return reply(this.join(connId, msg.name, msg.avatar));
       case 'rejoin': return reply(this.rejoin(connId, msg.playerId));
       case 'answer': return player && this.answer(player, msg.choice);
@@ -95,11 +95,11 @@ class Game {
   // ── Players ───────────────────────────────────────────────────────────────
   join(connId, rawName, avatar) {
     const name = cleanName(rawName);
-    if (!name) return { error: 'Please type a nickname!' };
-    if (this.phase === 'podium') return { error: 'This game has already finished.' };
-    if (this.players.size >= MAX_PLAYERS) return { error: 'Sorry, this game is full.' };
+    if (!name) return { error: 'err.noName' };
+    if (this.phase === 'podium') return { error: 'err.finished' };
+    if (this.players.size >= MAX_PLAYERS) return { error: 'err.full' };
     for (const p of this.players.values()) {
-      if (p.name.toLowerCase() === name.toLowerCase()) return { error: 'Someone already has that name. Try another!' };
+      if (p.name.toLowerCase() === name.toLowerCase()) return { error: 'err.nameTaken' };
     }
     const player = {
       id: randomId(), name, avatar: Array.from(String(avatar || '🦉')).slice(0, 4).join(''),
@@ -115,7 +115,7 @@ class Game {
 
   rejoin(connId, playerId) {
     const p = this.players.get(playerId);
-    if (!p) return { error: 'Could not find you in this game.' };
+    if (!p) return { error: 'err.notFound' };
     this.bind(connId, p);
     return { ok: true, playerId: p.id };
   }
@@ -187,6 +187,7 @@ class Game {
     for (const p of this.players.values()) {
       p.prevPos = p.pos;
       let points = 0;
+      const prevStreak = p.streak;
       const correct = !!p.answer && q.answers[p.answer.choice].correct;
       if (p.answer) counts[p.answer.choice]++;
       if (correct) {
@@ -201,7 +202,7 @@ class Game {
         p.streak = 0;
       }
       p.score += points;
-      p.result = { answered: !!p.answer, correct, points, streak: p.streak };
+      p.result = { answered: !!p.answer, correct, points, streak: p.streak, ms: p.answer?.ms ?? null, lostStreak: !correct && prevStreak >= 2 ? prevStreak : 0 };
     }
 
     this.rankPlayers();

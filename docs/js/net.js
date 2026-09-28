@@ -124,12 +124,12 @@ class PlayerLink {
 
   request(msg, timeout = 8000) {
     return new Promise(resolve => {
-      if (!this.conn?.open) return resolve({ error: 'Not connected. Check your internet.' });
+      if (!this.conn?.open) return resolve({ error: 'net.notConnected' });
       const rid = ++this.rid;
       this.pending.set(rid, resolve);
       this.conn.send({ ...msg, rid });
       setTimeout(() => {
-        if (this.pending.delete(rid)) resolve({ error: 'The game did not answer. Try again!' });
+        if (this.pending.delete(rid)) resolve({ error: 'net.noAnswer' });
       }, timeout);
     });
   }

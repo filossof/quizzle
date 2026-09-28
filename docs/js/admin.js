@@ -14,20 +14,22 @@
   function sanitizeQuiz(input) {
     const str = (s, max) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
     const title = str(input.title, 80);
-    if (!title) throw new Error('Your quiz needs a title.');
+    if (!title) throw new Error(t('a.needTitle'));
     const questions = (input.questions || []).map((q, i) => {
-      const where = `Question ${i + 1}`;
       const type = q.type === 'truefalse' ? 'truefalse' : 'quiz';
       const text = str(q.text, 200);
-      if (!text) throw new Error(`${where} needs some question text.`);
+      if (!text) throw new Error(t('a.needs', { n: i + 1, what: t('a.needText') }));
       let answers = (q.answers || []).slice(0, 4).map(a => ({ text: str(a?.text, 90), correct: !!a?.correct }));
       if (type === 'truefalse') {
         const trueIsCorrect = answers[0]?.correct || !answers[1]?.correct;
-        answers = [{ text: 'True', correct: trueIsCorrect }, { text: 'False', correct: !trueIsCorrect }];
+        answers = [
+          { text: answers[0]?.text || t('true'), correct: trueIsCorrect },
+          { text: answers[1]?.text || t('false'), correct: !trueIsCorrect },
+        ];
       } else {
         answers = answers.filter(a => a.text);
-        if (answers.length < 2) throw new Error(`${where} needs at least 2 answers.`);
-        if (!answers.some(a => a.correct)) throw new Error(`${where} needs a correct answer.`);
+        if (answers.length < 2) throw new Error(t('a.needs', { n: i + 1, what: t('a.needAnswers') }));
+        if (!answers.some(a => a.correct)) throw new Error(t('a.needs', { n: i + 1, what: t('a.needCorrect') }));
       }
       return {
         id: q.id || newId(), type, text,
@@ -37,7 +39,7 @@
         answers,
       };
     });
-    if (!questions.length) throw new Error('Add at least one question.');
+    if (!questions.length) throw new Error(t('a.needQuestions'));
     return {
       id: input.id || newId(), title,
       description: str(input.description, 160),
@@ -73,13 +75,17 @@
     return q;
   }
 
+  const thumbType = q => `${t(q.type === 'truefalse' ? 'a.typeTF' : 'a.typeQuiz')} · ${t('a.sec', { n: q.timeLimit })}`;
+
   function problemsOf(q) {
     const issues = [];
-    if (!q.text.trim()) issues.push('question text');
-    if (q.type === 'quiz') {
+    if (!q.text.trim()) issues.push(t('a.needText'));
+    if (q.type === 'truefalse') {
+      if (!q.answers.some(a => a.correct)) issues.push(t('a.needCorrect'));
+    } else {
       const filled = q.answers.filter(a => a.text.trim());
-      if (filled.length < 2) issues.push('at least 2 answers');
-      if (!filled.some(a => a.correct)) issues.push('a correct answer');
+      if (filled.length < 2) issues.push(t('a.needAnswers'));
+      if (!filled.some(a => a.correct)) issues.push(t('a.needCorrect'));
     }
     return issues;
   }
@@ -107,7 +113,7 @@
         URL.revokeObjectURL(img.src);
         resolve(c.toDataURL('image/jpeg', 0.85));
       };
-      img.onerror = () => reject(new Error('That file is not an image.'));
+      img.onerror = () => reject(new Error(t('a.notImage')));
       img.src = URL.createObjectURL(file);
     });
   }
@@ -115,12 +121,12 @@
   // ── Connect to GitHub ───────────────────────────────────────────────────
   function showLogin(error = '') {
     GitHub.showKeyForm(app, {
-      title: 'Quiz Studio 🔑',
-      intro: `Your quizzes are saved in your private GitHub repo <b>${esc(GitHub.repoName)}</b>, so only you can see, edit or host them. Connect it once on this device:`,
+      title: t('a.title'),
+      intro: t('a.intro', { repo: esc(GitHub.repoName) }),
       write: true,
       error,
       onConnected: showList,
-      backLink: '<a class="link-btn" href="host.html">← Back to games</a>',
+      backLink: `<a class="link-btn" href="host.html">${t('a.back')}</a>`,
     });
   }
 
@@ -131,15 +137,16 @@
     app.innerHTML = `
       <div class="admin">
         <header class="a-top">
-          ${logoHtml('sm')}<span class="a-sub">Studio</span>
+          ${logoHtml('sm')}<span class="a-sub">${t('a.studio')}</span>
           <div class="grow"></div>
-          <a class="btn" href="host.html" target="_blank">🎮 Host a game</a>
-          <button class="btn" id="import">📥 Import</button>
-          <button class="btn primary" id="new">＋ New quiz</button>
-          <button class="btn small" id="logout" title="Disconnect GitHub on this device">🔌</button>
+          <a class="btn" href="host.html" target="_blank">${t('a.host')}</a>
+          <button class="btn" id="import">${t('a.import')}</button>
+          <button class="btn primary" id="new">${t('a.new')}</button>
+          ${langButton('btn small')}
+          <button class="btn small" id="logout" title="${t('a.logout')}">🔌</button>
         </header>
-        <main class="a-main"><div class="quiz-grid"><div class="loading">Loading from GitHub…</div></div>
-          <p class="gh-status" style="text-align:center;margin-top:2rem">💾 Saved in your private repo <a href="${GitHub.repoUrl}/commits/${CONFIG.branch}" target="_blank" rel="noopener">${esc(GitHub.repoName)}</a>, and every change is kept in its history.</p>
+        <main class="a-main"><div class="quiz-grid"><div class="loading">${t('a.loading')}</div></div>
+          <p class="gh-status" style="text-align:center;margin-top:2rem">${t('a.savedIn', { repo: `<a href="${GitHub.repoUrl}/commits/${CONFIG.branch}" target="_blank" rel="noopener">${esc(GitHub.repoName)}</a>` })}</p>
         </main>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div>`;
@@ -147,7 +154,7 @@
     $('#import').onclick = () => $('#importFile').click();
     $('#importFile').onchange = importFile;
     $('#logout').onclick = () => {
-      if (!confirm('Disconnect GitHub on this device? Your quizzes stay safe in the repo.')) return;
+      if (!confirm(t('a.logoutConfirm'))) return;
       GitHub.forget();
       showLogin();
     };
@@ -160,16 +167,16 @@
         <span class="qc-emoji">${esc(q.emoji)}</span>
         <span class="qc-title" dir="auto">${esc(q.title)}</span>
         <span class="qc-desc" dir="auto">${esc(q.description)}</span>
-        <span class="qc-meta">${q.questions.length} question${q.questions.length === 1 ? '' : 's'}</span>
+        <span class="qc-meta">${t('nQuestions', { n: q.questions.length })}</span>
         <div class="qc-actions">
-          <button class="btn small primary" data-act="edit">✏️ Edit</button>
-          <button class="btn small" data-act="play" title="Host this quiz">▶</button>
-          <button class="btn small" data-act="dup" title="Duplicate">⧉</button>
-          <button class="btn small" data-act="export" title="Download">⬇</button>
-          <button class="btn small danger" data-act="delete" title="Delete">🗑</button>
+          <button class="btn small primary" data-act="edit">${t('a.edit')}</button>
+          <button class="btn small" data-act="play" title="${t('a.hostThis')}">▶</button>
+          <button class="btn small" data-act="dup" title="${t('a.duplicate')}">⧉</button>
+          <button class="btn small" data-act="export" title="${t('a.download')}">⬇</button>
+          <button class="btn small danger" data-act="delete" title="${t('a.delete')}">🗑</button>
         </div>
       </div>`).join('')
-      : '<div class="empty">No quizzes yet. Click <b>＋ New quiz</b> to make one!</div>';
+      : `<div class="empty">${t('a.empty')}</div>`;
 
     grid.onclick = async e => {
       const btn = e.target.closest('[data-act]');
@@ -181,10 +188,10 @@
           case 'edit': openEditor(q); break;
           case 'play': window.open(`host.html?quiz=${encodeURIComponent(id)}`, '_blank'); break;
           case 'dup': {
-            const copy = { ...structuredClone(q), id: newId(), title: `${q.title} (copy)`.slice(0, 80), updatedAt: Date.now() };
+            const copy = { ...structuredClone(q), id: newId(), title: t('a.copy', { title: q.title }).slice(0, 80), updatedAt: Date.now() };
             btn.disabled = true;
             await GitHub.update(`Duplicate quiz "${q.title}"`, list => [copy, ...list]);
-            toast('Duplicated!');
+            toast(t('a.duplicated'));
             showList();
             break;
           }
@@ -194,10 +201,10 @@
             break;
           }
           case 'delete':
-            if (!confirm(`Delete "${q.title}"? (It stays in the GitHub history, just in case.)`)) return;
+            if (!confirm(t('a.deleteConfirm', { title: q.title }))) return;
             btn.disabled = true;
             await GitHub.update(`Delete quiz "${q.title}"`, list => list.filter(x => x.id !== id));
-            toast('Deleted');
+            toast(t('a.deleted'));
             showList();
             break;
         }
@@ -214,10 +221,10 @@
       const items = (Array.isArray(data) ? data : [data]).map(q => sanitizeQuiz({ ...q, id: undefined }));
       for (const q of items) await uploadImages(q);
       await GitHub.update(`Import ${items.length} quiz(zes)`, list => [...items, ...list]);
-      toast(`Imported ${items.length} quiz${items.length === 1 ? '' : 'zes'}!`);
+      toast(t('a.imported', { n: items.length }));
       showList();
     } catch (err) {
-      fail(new Error(`Import failed: ${err.message}`));
+      fail(new Error(t('a.importFailed', { msg: err.message })));
     }
   }
 
@@ -230,24 +237,24 @@
     app.innerHTML = `
       <div class="admin editor">
         <header class="a-top">
-          <button class="btn" id="back">← Quizzes</button>
-          <button class="emoji-btn" id="emoji" title="Pick a cover emoji">${esc(quiz.emoji)}</button>
-          <input class="title-in" id="title" dir="auto" maxlength="80" placeholder="Name your quiz…" value="${esc(quiz.title)}">
+          <button class="btn" id="back">${t('a.quizzes')}</button>
+          <button class="emoji-btn" id="emoji" title="${t('a.pickEmoji')}">${esc(quiz.emoji)}</button>
+          <input class="title-in" id="title" dir="auto" maxlength="80" placeholder="${t('a.namePlaceholder')}" value="${esc(quiz.title)}">
           <div class="grow"></div>
           <span class="save-state"></span>
-          <button class="btn primary" id="save">💾 Save</button>
+          <button class="btn primary" id="save">${t('a.save')}</button>
         </header>
         <div class="ed-body">
           <aside class="ed-side">
-            <input class="desc-in" id="desc" dir="auto" maxlength="160" placeholder="Short description (optional)" value="${esc(quiz.description)}">
+            <input class="desc-in" id="desc" dir="auto" maxlength="160" placeholder="${t('a.descPlaceholder')}" value="${esc(quiz.description)}">
             <div class="q-thumbs"></div>
-            <button class="btn add-q" id="addQ">＋ Add question</button>
+            <button class="btn add-q" id="addQ">${t('a.addQ')}</button>
           </aside>
           <main class="ed-main"></main>
         </div>
       </div>`;
 
-    $('#back').onclick = () => { if (!dirty || confirm('You have unsaved changes. Leave anyway?')) showList(); };
+    $('#back').onclick = () => { if (!dirty || confirm(t('a.leaveConfirm'))) showList(); };
     $('#title').oninput = e => { quiz.title = e.target.value; markDirty(); };
     $('#desc').oninput = e => { quiz.description = e.target.value; markDirty(); };
     $('#save').onclick = save;
@@ -268,7 +275,7 @@
   function markDirty() {
     dirty = true;
     const s = $('.save-state');
-    if (s) s.textContent = 'Unsaved changes';
+    if (s) s.textContent = t('a.unsaved');
   }
 
   function emojiPicker(e) {
@@ -277,7 +284,7 @@
     const pop = document.createElement('div');
     pop.className = 'emoji-pop pop-in';
     pop.innerHTML = COVER_EMOJIS.map(x => `<button>${x}</button>`).join('') +
-      `<input maxlength="4" placeholder="or type one" aria-label="Custom emoji">`;
+      `<input maxlength="4" placeholder="${t('a.typeEmoji')}" aria-label="${t('a.typeEmoji')}">`;
     const rect = e.currentTarget.getBoundingClientRect();
     pop.style.left = rect.left + 'px';
     pop.style.top = rect.bottom + 8 + 'px';
@@ -298,17 +305,17 @@
     box.innerHTML = quiz.questions.map((q, i) => `
       <div class="thumb ${i === current ? 'active' : ''} ${problemsOf(q).length ? 'invalid' : ''}" data-i="${i}">
         <span class="t-num">${i + 1}</span>
-        <span class="t-text" dir="auto">${esc(q.text) || '<i>New question</i>'}</span>
-        <span class="t-type">${q.type === 'truefalse' ? 'True/False' : 'Quiz'} · ${q.timeLimit}s</span>
+        <span class="t-text" dir="auto">${esc(q.text) || `<i>${t('a.newQ')}</i>`}</span>
+        <span class="t-type">${thumbType(q)}</span>
         <span class="t-move">
-          <button data-move="-1" title="Move up" ${i === 0 ? 'disabled' : ''}>▲</button>
-          <button data-move="1" title="Move down" ${i === quiz.questions.length - 1 ? 'disabled' : ''}>▼</button>
+          <button data-move="-1" title="${t('a.moveUp')}" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button data-move="1" title="${t('a.moveDown')}" ${i === quiz.questions.length - 1 ? 'disabled' : ''}>▼</button>
         </span>
       </div>`).join('');
     box.onclick = e => {
-      const t = e.target.closest('.thumb');
-      if (!t) return;
-      const i = Number(t.dataset.i);
+      const thumb = e.target.closest('.thumb');
+      if (!thumb) return;
+      const i = Number(thumb.dataset.i);
       const move = e.target.closest('[data-move]');
       if (move) {
         const j = i + Number(move.dataset.move);
@@ -325,11 +332,11 @@
 
   function refreshThumb() {
     const q = quiz.questions[current];
-    const t = $(`.thumb[data-i="${current}"]`);
-    if (!t) return;
-    $('.t-text', t).innerHTML = esc(q.text) || '<i>New question</i>';
-    $('.t-type', t).textContent = `${q.type === 'truefalse' ? 'True/False' : 'Quiz'} · ${q.timeLimit}s`;
-    t.classList.toggle('invalid', problemsOf(q).length > 0);
+    const el = $(`.thumb[data-i="${current}"]`);
+    if (!el) return;
+    $('.t-text', el).innerHTML = esc(q.text) || `<i>${t('a.newQ')}</i>`;
+    $('.t-type', el).textContent = thumbType(q);
+    el.classList.toggle('invalid', problemsOf(q).length > 0);
   }
 
   function renderQuestion() {
@@ -338,32 +345,32 @@
     main.innerHTML = `
       <div class="qe fade-in">
         <div class="qe-settings">
-          <label>Type
+          <label>${t('a.type')}
             <select id="q-type">
-              <option value="quiz" ${q.type === 'quiz' ? 'selected' : ''}>🔷 Quiz</option>
-              <option value="truefalse" ${q.type === 'truefalse' ? 'selected' : ''}>✅ True / False</option>
+              <option value="quiz" ${q.type === 'quiz' ? 'selected' : ''}>${t('a.optQuiz')}</option>
+              <option value="truefalse" ${q.type === 'truefalse' ? 'selected' : ''}>${t('a.optTF')}</option>
             </select></label>
-          <label>⏱ Time
-            <select id="q-time">${TIMES.map(t => `<option value="${t}" ${q.timeLimit === t ? 'selected' : ''}>${t} sec</option>`).join('')}
-              ${TIMES.includes(q.timeLimit) ? '' : `<option selected value="${q.timeLimit}">${q.timeLimit} sec</option>`}</select></label>
-          <label>⭐ Points
+          <label>${t('a.time')}
+            <select id="q-time">${TIMES.map(sec => `<option value="${sec}" ${q.timeLimit === sec ? 'selected' : ''}>${t('a.sec', { n: sec })}</option>`).join('')}
+              ${TIMES.includes(q.timeLimit) ? '' : `<option selected value="${q.timeLimit}">${t('a.sec', { n: q.timeLimit })}</option>`}</select></label>
+          <label>${t('a.points')}
             <select id="q-points">
-              <option value="1" ${q.points === 1 ? 'selected' : ''}>Standard</option>
-              <option value="2" ${q.points === 2 ? 'selected' : ''}>Double</option>
-              <option value="0" ${q.points === 0 ? 'selected' : ''}>No points</option>
+              <option value="1" ${q.points === 1 ? 'selected' : ''}>${t('a.ptsStandard')}</option>
+              <option value="2" ${q.points === 2 ? 'selected' : ''}>${t('a.ptsDouble')}</option>
+              <option value="0" ${q.points === 0 ? 'selected' : ''}>${t('a.ptsNone')}</option>
             </select></label>
           <div class="grow"></div>
-          <button class="btn small" id="q-dup">⧉ Duplicate</button>
-          <button class="btn small danger" id="q-del" ${quiz.questions.length < 2 ? 'disabled' : ''}>🗑 Delete</button>
+          <button class="btn small" id="q-dup">${t('a.dupQ')}</button>
+          <button class="btn small danger" id="q-del" ${quiz.questions.length < 2 ? 'disabled' : ''}>${t('a.delQ')}</button>
         </div>
-        <textarea id="q-text" class="qe-text" dir="auto" maxlength="200" rows="2" placeholder="Type your question here…">${esc(q.text)}</textarea>
+        <textarea id="q-text" class="qe-text" dir="auto" maxlength="200" rows="2" placeholder="${t('a.qPlaceholder')}">${esc(q.text)}</textarea>
         <div class="qe-media">
           ${q.image
-            ? `<div class="media-preview"><img alt="" data-path="${esc(q.image)}"><button class="btn small danger" id="img-rm">✕ Remove image</button></div>`
+            ? `<div class="media-preview"><img alt="" data-path="${esc(q.image)}"><button class="btn small danger" id="img-rm">${t('a.removeImg')}</button></div>`
             : `<div class="media-drop" id="drop">
                  <div class="md-icon">🖼️</div>
-                 <p>Add a picture <small>(optional)</small></p>
-                 <div class="md-btns"><button class="btn small" id="img-up">⬆ Upload</button><button class="btn small" id="img-url">🔗 From link</button></div>
+                 <p>${t('a.addPic')}</p>
+                 <div class="md-btns"><button class="btn small" id="img-up">${t('a.upload')}</button><button class="btn small" id="img-url">${t('a.fromLink')}</button></div>
                  <input type="file" id="img-file" accept="image/*" hidden>
                </div>`}
         </div>
@@ -373,12 +380,12 @@
             const tf = q.type === 'truefalse';
             return `<div class="qe-ans ${st.cls} ${a.correct ? 'is-correct' : ''} ${!tf && !a.text.trim() ? 'empty' : ''}" data-i="${i}">
               <span class="shape">${st.shape}</span>
-              <input maxlength="90" dir="auto" value="${esc(a.text)}" placeholder="Answer ${i + 1}${i < 2 ? '' : ' (optional)'}" ${tf ? 'readonly' : ''}>
-              <button class="correct-toggle" title="Mark as correct" aria-pressed="${a.correct}">✔</button>
+              <input maxlength="90" dir="auto" value="${esc(a.text)}" placeholder="${tf ? t(i ? 'false' : 'true') : t(i < 2 ? 'a.answerN' : 'a.answerOpt', { n: i + 1 })}">
+              <button class="correct-toggle" title="${t('a.markCorrect')}" aria-pressed="${a.correct}">✔</button>
             </div>`;
           }).join('')}
         </div>
-        <p class="qe-hint">Tap the ✔ to mark the right answer${q.type === 'quiz' ? ' (you can pick more than one)' : ''}.</p>
+        <p class="qe-hint">${t(q.type === 'quiz' ? 'a.hintMulti' : 'a.hintTF')}</p>
       </div>`;
 
     const changed = (rerender = false) => {
@@ -393,7 +400,7 @@
     $('#q-type').onchange = e => {
       q.type = e.target.value;
       q.answers = q.type === 'truefalse'
-        ? [{ text: 'True', correct: true }, { text: 'False', correct: false }]
+        ? [{ text: t('true'), correct: true }, { text: t('false'), correct: false }]
         : [0, 1, 2, 3].map(() => ({ text: '', correct: false }));
       changed(true);
     };
@@ -405,7 +412,7 @@
       renderQuestion();
     };
     $('#q-del').onclick = () => {
-      if (!confirm('Delete this question?')) return;
+      if (!confirm(t('a.delQConfirm'))) return;
       quiz.questions.splice(current, 1);
       current = Math.min(current, quiz.questions.length - 1);
       markDirty();
@@ -429,15 +436,15 @@
     };
 
     const img = $('.media-preview img');
-    if (img) GitHub.imageUrl(img.dataset.path).then(url => { img.src = url; }).catch(() => { img.alt = '⚠️ Could not load this picture'; });
+    if (img) GitHub.imageUrl(img.dataset.path).then(url => { img.src = url; }).catch(() => { img.alt = t('a.imgFailed'); });
 
     const setImage = v => { q.image = v; changed(true); };
     $('#img-rm')?.addEventListener('click', () => setImage(''));
     $('#img-up')?.addEventListener('click', () => $('#img-file').click());
     $('#img-url')?.addEventListener('click', () => {
-      const url = prompt('Paste an image link (https://…)');
+      const url = prompt(t('a.imgPrompt'));
       if (url && /^https?:\/\//.test(url.trim())) setImage(url.trim());
-      else if (url) toast('That link should start with https://');
+      else if (url) toast(t('a.imgBadLink'));
     });
     const useFile = async file => {
       try { setImage(await resizeImage(file)); } catch (err) { toast(err.message); }
@@ -457,18 +464,18 @@
   }
 
   async function save() {
-    if (!quiz.title.trim()) { toast('Give your quiz a name first!'); $('#title').focus(); return; }
+    if (!quiz.title.trim()) { toast(t('a.needTitle')); $('#title').focus(); return; }
     const bad = quiz.questions.findIndex(q => problemsOf(q).length);
     if (bad >= 0) {
       current = bad;
       renderThumbs();
       renderQuestion();
-      toast(`Question ${bad + 1} needs ${problemsOf(quiz.questions[bad]).join(' and ')}.`);
+      toast(t('a.needs', { n: bad + 1, what: problemsOf(quiz.questions[bad]).join(t('a.and')) }));
       return;
     }
     const btn = $('#save');
     btn.disabled = true;
-    $('.save-state').textContent = 'Saving to GitHub…';
+    $('.save-state').textContent = t('a.saving');
     try {
       const clean = await uploadImages(sanitizeQuiz(quiz));
       const isNew = !quizzes.some(q => q.id === clean.id);
@@ -477,10 +484,10 @@
       quiz.id = clean.id;
       clean.questions.forEach((sq, i) => { Object.assign(quiz.questions[i], { id: sq.id, image: sq.image }); });
       dirty = false;
-      $('.save-state').textContent = '✔ Saved to GitHub';
-      toast('Saved! 🎉');
+      $('.save-state').textContent = t('a.saved');
+      toast(t('a.savedToast'));
     } catch (err) {
-      $('.save-state').textContent = 'Not saved';
+      $('.save-state').textContent = t('a.notSaved');
       fail(err);
     } finally {
       btn.disabled = false;

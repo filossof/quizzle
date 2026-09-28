@@ -8,7 +8,7 @@ const Sound = (() => {
 
   let ctx = null, master, musicBus, sfxBus, noiseBuf;
   let soundOn = pref.get('sound', true);
-  let musicOn = pref.get('music', true);
+  let musicOn = true; // one button now controls everything (sound on/off)
   let wanted = null, current = null;
   const readyListeners = [];
 

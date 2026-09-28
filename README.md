@@ -9,6 +9,8 @@ A colorful, kid-friendly live quiz game in the style of Kahoot. Show the host sc
 - **Sounds and music**: lobby tune, tense question music, victory fanfare, drumroll, ticks, dings. All of it is generated live in the browser
 - **Quiz Studio** for making quizzes: multiple choice or true/false, images, time limits, double points, import/export. Hebrew and other right-to-left languages work
 - Scoring rewards speed (up to 1000 points) plus answer streak bonuses 🔥
+- A cheeky owl 🦉 comments on every answer reveal: brags about the fastest players and streaks, and gently teases a missed answer (never the same kid twice in a row)
+- Hebrew (default, right-to-left) and English interface, switchable with the 🌐 button on every page
 - Phones and the host can refresh or drop Wi-Fi and reconnect automatically
 
 ## How it works (no server needed)
@@ -40,6 +42,7 @@ Without the key, nobody can see, host or edit your quizzes. Players never need o
 | `docs/js/net.js` | Peer-to-peer connection and auto-reconnect |
 | `docs/js/audio.js` | Web Audio synthesizer for sound effects and music |
 | `docs/js/github.js` | Reads and saves quizzes in the private data repo |
+| `docs/js/i18n.js` | Hebrew and English text, including the owl's jokes |
 | `docs/js/config.js` | Name of the private data repo |
 
 ## Local testing

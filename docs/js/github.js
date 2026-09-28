@@ -24,9 +24,9 @@ const GitHub = (() => {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      const err = new Error(res.status === 401 ? 'Your GitHub key stopped working. Please connect again.'
-        : res.status === 403 ? `That key doesn't have permission for ${repoName}.`
-          : res.status === 404 && path === '' ? `That key can't see the private ${repoName} repo.`
+      const err = new Error(res.status === 401 ? t('gh.expired')
+        : res.status === 403 ? t('gh.noPermission', { repo: repoName })
+          : res.status === 404 && path === '' ? t('gh.cantSee', { repo: repoName })
             : data.message || `GitHub error ${res.status}`);
       err.status = res.status;
       throw err;
@@ -57,7 +57,7 @@ const GitHub = (() => {
     async connect(newToken, { write = true } = {}) {
       token = newToken.trim();
       const repo = await json('GET', '');
-      if (write && !repo.permissions?.push) throw new Error("That key can read your quizzes but can't save them. Give it Contents: Read and write.");
+      if (write && !repo.permissions?.push) throw new Error(t('gh.readOnly'));
       try { localStorage.setItem(KEY, token); } catch { }
     },
 
@@ -122,19 +122,20 @@ const GitHub = (() => {
             <div class="join-title">${title}</div>
             <p class="gh-status">${intro}</p>
             <details class="gh-help" ${token ? '' : 'open'}>
-              <summary>How do I get a key?</summary>
+              <summary>${t('key.help')}</summary>
               <ol class="gh-steps">
-                <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new fine-grained token</a></li>
-                <li>Name it <b>quizzle</b> and pick an expiration (for example, 1 year)</li>
-                <li><b>Repository access</b> → Only select repositories → <b>${esc(CONFIG.dataRepo)}</b></li>
-                <li><b>Permissions</b> → Repository permissions → <b>Contents: Read and write</b></li>
-                <li>Click <b>Generate token</b>, copy it, and paste it here 👇</li>
+                <li>${t('key.step1')}</li>
+                <li>${t('key.step2')}</li>
+                <li>${t('key.step3', { repo: esc(CONFIG.dataRepo) })}</li>
+                <li>${t('key.step4')}</li>
+                <li>${t('key.step5')}</li>
               </ol>
             </details>
-            <input type="password" id="token" placeholder="github_pat_…" aria-label="GitHub key" autocomplete="off">
-            <button class="btn big dark">Unlock</button>
+            <input type="password" id="token" placeholder="${t('key.placeholder')}" aria-label="${t('key.placeholder')}" autocomplete="off" dir="ltr">
+            <button class="btn big dark">${t('key.unlock')}</button>
             <div class="form-error">${esc(error)}</div>
           </form>
+          ${langButton('link-btn')}
           ${backLink}
         </div>`;
       const form = container.querySelector('#keyForm');
@@ -143,16 +144,16 @@ const GitHub = (() => {
       form.onsubmit = async e => {
         e.preventDefault();
         btn.disabled = true;
-        btn.textContent = 'Checking…';
+        btn.textContent = t('key.checking');
         try {
           await api.connect(form.querySelector('#token').value, { write });
           onConnected();
         } catch (err) {
           api.forget();
-          form.querySelector('.form-error').textContent = err.status === 401 ? "GitHub didn't accept that key. Copy it again?" : err.message;
+          form.querySelector('.form-error').textContent = err.status === 401 ? t('key.rejected') : err.message;
           bump(form, 'shake');
           btn.disabled = false;
-          btn.textContent = 'Unlock';
+          btn.textContent = t('key.unlock');
         }
       };
     },

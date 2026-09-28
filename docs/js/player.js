@@ -47,8 +47,8 @@
       go('kicked', `
         <div class="p-center">
           <div class="big-emoji wobble">🙈</div>
-          <h1>You were removed from the game</h1>
-          <button class="btn big dark" id="again">Join again</button>
+          <h1>${t('p.kicked')}</h1>
+          <button class="btn big dark" id="again">${t('p.joinAgain')}</button>
         </div>`);
       $('#again').onclick = () => showPin();
     } else if (msg.t === 'ended') {
@@ -58,9 +58,9 @@
       go('ended', `
         <div class="p-center">
           <div class="big-emoji">👋</div>
-          <h1 dir="auto">${esc(msg.reason)}</h1>
-          <p>Thanks for playing!</p>
-          <button class="btn big dark" id="again">Join a new game</button>
+          <h1 dir="auto">${esc(t(msg.reason))}</h1>
+          <p>${t('p.thanks')}</p>
+          <button class="btn big dark" id="again">${t('p.joinNew')}</button>
         </div>`);
       $('#again').onclick = () => showPin();
     }
@@ -72,10 +72,10 @@
       go('lost', `
         <div class="p-center">
           <div class="big-emoji">📶</div>
-          <h1>Lost connection to the game</h1>
-          <p>Check your internet, then tap below.</p>
-          <button class="btn big dark" id="retry">Reconnect</button>
-          <button class="link-btn" id="new">Join a different game</button>
+          <h1>${t('p.lostTitle')}</h1>
+          <p>${t('p.lostText')}</p>
+          <button class="btn big dark" id="retry">${t('p.reconnect')}</button>
+          <button class="link-btn" id="new">${t('p.joinOther')}</button>
         </div>`);
       $('#retry').onclick = resumeSession;
       $('#new').onclick = () => { leaveGame(); showPin(); };
@@ -94,12 +94,12 @@
     if (res?.ok) return;
     const hadGame = !!state;
     leaveGame();
-    if (hadGame) toast('That game has ended.');
+    if (hadGame) toast(t('p.gameEnded'));
     showPin();
   };
 
   async function resumeSession() {
-    go('resume', `<div class="p-center"><div class="big-emoji wobble">📡</div><h1>Getting you back in…</h1></div>`);
+    go('resume', `<div class="p-center"><div class="big-emoji wobble">📡</div><h1>${t('p.resuming')}</h1></div>`);
     try {
       await link.connect(session.pin);
       await link.onReconnect();
@@ -115,11 +115,12 @@
       <div class="join">
         ${logoHtml('xl')}
         <form class="join-card pop-in" id="pinForm" autocomplete="off">
-          <input id="pin" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="Game PIN" aria-label="Game PIN">
-          <button class="btn big dark">Enter</button>
+          <input id="pin" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="${t('p.pin')}" aria-label="${t('p.pin')}" dir="ltr">
+          <button class="btn big dark">${t('p.enter')}</button>
           <div class="form-error" role="alert"></div>
         </form>
-        <p class="join-hint">Ask your host for the PIN on the big screen 📺</p>
+        <p class="join-hint">${t('p.hint')}</p>
+        ${langButton('link-btn')}
       </div>`);
     const form = $('#pinForm'), input = $('#pin'), btn = form.querySelector('.btn');
     const fail = msg => {
@@ -130,20 +131,20 @@
     form.onsubmit = async e => {
       e.preventDefault();
       const pin = input.value.replace(/\D/g, '');
-      if (pin.length !== 6) return fail('The PIN has 6 numbers.');
+      if (pin.length !== 6) return fail(t('p.pinLen'));
       btn.disabled = true;
-      btn.textContent = 'Connecting…';
+      btn.textContent = t('p.connecting');
       try {
         await link.connect(pin);
         const res = await link.request({ t: 'check' });
-        if (!res?.ok) throw new Error(res?.error || 'Something went wrong.');
+        if (!res?.ok) throw new Error(t(res?.error || 'p.oops'));
         showName(pin, res.title);
       } catch (err) {
         link.disconnect();
         btn.disabled = false;
-        btn.textContent = 'Enter';
-        fail(err.message === 'no-game' ? "Hmm, we couldn't find a game with that PIN."
-          : err.message === 'timeout' || err.type ? 'Could not connect. Check your internet and try again.' : err.message);
+        btn.textContent = t('p.enter');
+        fail(err.message === 'no-game' ? t('p.noGame')
+          : err.message === 'timeout' || err.type ? t('p.noNet') : err.message);
       }
     };
     if (error) fail(error);
@@ -156,9 +157,6 @@
     }
   }
 
-  const ADJ = ['Happy', 'Speedy', 'Silly', 'Brave', 'Clever', 'Sunny', 'Bouncy', 'Jolly', 'Mighty', 'Sparkly', 'Cosmic', 'Fluffy', 'Zippy', 'Lucky', 'Super', 'Giggly'];
-  const NOUN = ['Panda', 'Tiger', 'Otter', 'Koala', 'Dino', 'Unicorn', 'Penguin', 'Rocket', 'Dragon', 'Bunny', 'Fox', 'Owl', 'Llama', 'Turtle', 'Kitten', 'Puppy'];
-
   function showName(pin, title) {
     go('join-name', `
       <div class="join">
@@ -167,20 +165,20 @@
           <div class="join-title" dir="auto">${esc(title)}</div>
           <div class="avatar-preview bounce">${myAvatar}</div>
           <div class="name-row">
-            <input id="name" dir="auto" maxlength="16" placeholder="Your nickname" aria-label="Nickname" autocapitalize="words" spellcheck="false">
-            <button type="button" class="dice" title="Random name">🎲</button>
+            <input id="name" dir="auto" maxlength="16" placeholder="${t('p.nickname')}" aria-label="${t('p.nickname')}" autocapitalize="words" spellcheck="false">
+            <button type="button" class="dice" title="${t('p.randomName')}">🎲</button>
           </div>
           <div class="avatars">${AVATARS.map(a => `<button type="button" class="av-opt ${a === myAvatar ? 'sel' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
-          <button class="btn big dark">Let's go! 🚀</button>
+          <button class="btn big dark">${t('p.go')}</button>
           <div class="form-error" role="alert"></div>
         </form>
-        <button class="link-btn" id="back">← Different PIN</button>
+        <button class="link-btn" id="back">${t('p.back')}</button>
       </div>`);
     const form = $('#nameForm'), input = $('#name');
     input.focus();
     $('#back').onclick = () => { link.disconnect(); showPin(); };
     $('.dice').onclick = () => {
-      input.value = `${pick(ADJ)} ${pick(NOUN)}`;
+      input.value = t('p.randomNames');
       bump($('.dice'), 'spin');
       Sound.sfx('pop');
     };
@@ -198,11 +196,11 @@
       e.preventDefault();
       const name = input.value.trim();
       const fail = msg => { $('.form-error').textContent = msg; bump(form, 'shake'); buzz([60, 40, 60]); };
-      if (!name) return fail('Type a nickname or tap 🎲');
+      if (!name) return fail(t('p.needName'));
       form.querySelector('.btn').disabled = true;
       link.request({ t: 'join', name, avatar: myAvatar }).then(res => {
         form.querySelector('.btn').disabled = false;
-        if (!res?.ok) return fail(res?.error || 'Could not join.');
+        if (!res?.ok) return fail(t(res?.error || 'p.joinFail'));
         save({ pin, playerId: res.playerId });
         Sound.sfx('correct');
         keepAwake();
@@ -214,15 +212,15 @@
   const foot = s => `
     <div class="p-foot">
       <span class="pf-me"><span class="pf-av">${esc(s.me.avatar)}</span><span dir="auto">${esc(s.me.name)}</span></span>
-      <button class="pf-sound" title="Sound on/off">${Sound.soundOn ? '🔊' : '🔇'}</button>
+      <button class="pf-sound" title="${t('sound')}">${Sound.soundOn ? '🔊' : '🔇'}</button>
       <span class="pf-score">${s.me.score.toLocaleString()}</span>
     </div>`;
-  const head = s => `<div class="p-head"><span>${s.qIndex >= 0 ? `Question ${s.qIndex + 1} / ${s.total}` : `<span dir="auto">${esc(s.title)}</span>`}</span><span class="p-timer"></span></div>`;
+  const head = s => `<div class="p-head"><span>${s.qIndex >= 0 ? t('p.qOf', { n: s.qIndex + 1, total: s.total }) : `<span dir="auto">${esc(s.title)}</span>`}</span><span class="p-timer"></span></div>`;
 
   function rankLine(s) {
-    if (s.me.rank === 1) return `You're in <b>1st place!</b> 👑`;
-    let line = `You're in <b>${ordinal(s.me.rank)} place</b>`;
-    if (s.ahead) line += `<br><small>${s.ahead.gap.toLocaleString()} points behind <span dir="auto">${esc(s.ahead.name)}</span>. You can do it!</small>`;
+    if (s.me.rank === 1) return t('p.first');
+    let line = t('p.place', { n: s.me.rank });
+    if (s.ahead) line += `<br><small>${t('p.behind', { gap: s.ahead.gap.toLocaleString(), name: `<span dir="auto">${esc(s.ahead.name)}</span>` })}</small>`;
     return line;
   }
 
@@ -233,10 +231,10 @@
           ${head(s)}
           <div class="p-center">
             <div class="big-av bounce">${esc(s.me.avatar)}</div>
-            <h1 class="pop-in">You're in!</h1>
-            <p>See your name on the big screen? 👀</p>
+            <h1 class="pop-in">${t('p.youreIn')}</h1>
+            <p>${t('p.seeName')}</p>
             <div class="wait-shapes">${SHAPES.map((sh, i) => `<span class="${ANSWER_CLASSES[i]}" style="animation-delay:${i * 150}ms">${sh}</span>`).join('')}</div>
-            <p class="muted"><span class="pcount">${s.playerCount}</span> players ready</p>
+            <p class="muted"><span class="pcount">${s.playerCount}</span> ${t('p.ready')}</p>
           </div>
           ${foot(s)}`);
       },
@@ -253,11 +251,11 @@
         go(keyOf(s), `
           ${head(s)}
           <div class="p-center">
-            <div class="p-qnum bounce-in">Question ${s.qIndex + 1}</div>
+            <div class="p-qnum bounce-in">${t('p.qNum', { n: s.qIndex + 1 })}</div>
             <div class="p-qtext zoom-in" dir="auto">${esc(s.question.text)}</div>
-            ${s.question.points === 2 ? '<div class="badge double">⭐ Double points!</div>' : ''}
+            ${s.question.points === 2 ? `<div class="badge double">${t('p.double')}</div>` : ''}
             <div class="wait-shapes spin">${SHAPES.map((sh, i) => `<span class="${ANSWER_CLASSES[i]}">${sh}</span>`).join('')}</div>
-            <p>Get ready…</p>
+            <p>${t('p.getReady')}</p>
           </div>
           ${foot(s)}`);
       },
@@ -310,9 +308,9 @@
           buzz([50, 50, 120]);
           html = `
             <div class="result-icon pop-big">✔</div>
-            <h1 class="result-title">${pick(['Correct!', 'Awesome!', 'You got it!', 'Brilliant!', 'Super star!'])}</h1>
+            <h1 class="result-title">${t('p.correct')}</h1>
             <div class="points">+<span class="pts">0</span></div>
-            ${r.streak >= 2 ? `<div class="streak-pill wobble">🔥 Answer streak ${r.streak}</div>` : ''}`;
+            ${r.streak >= 2 ? `<div class="streak-pill wobble">${t('p.streak', { n: r.streak })}</div>` : ''}`;
           later(300, () => confetti({ count: 70 }));
         } else if (r.answered) {
           mood = 'bad';
@@ -320,17 +318,17 @@
           buzz([150]);
           html = `
             <div class="result-icon pop-big">✖</div>
-            <h1 class="result-title">${pick(['Oops, not quite!', 'So close!', 'Nice try!'])}</h1>
-            <p class="answer-was">The answer was <b dir="auto">${esc(right)}</b></p>
-            <p>${pick(["You'll get the next one! 💪", 'Keep going, you can do it! 🌟', "Don't give up! 🚀"])}</p>`;
+            <h1 class="result-title">${t('p.wrong')}</h1>
+            <p class="answer-was">${t('p.answerWas')} <b dir="auto">${esc(right)}</b></p>
+            <p>${t('p.cheer')}</p>`;
         } else {
           mood = 'late';
           Sound.sfx('timeout');
           html = `
             <div class="result-icon pop-big">⏰</div>
-            <h1 class="result-title">Time's up!</h1>
-            <p class="answer-was">The answer was <b dir="auto">${esc(right)}</b></p>
-            <p>Be quick next time! ⚡</p>`;
+            <h1 class="result-title">${t('p.timeUp')}</h1>
+            <p class="answer-was">${t('p.answerWas')} <b dir="auto">${esc(right)}</b></p>
+            <p>${t('p.beQuick')}</p>`;
         }
         go(keyOf(s), `
           ${head(s)}
@@ -347,7 +345,7 @@
           <div class="p-center">
             <div class="rank-badge pop-big" style="--c:${colorFor(s.me.name)}">${s.me.rank}</div>
             <h1>${rankLine(s)}</h1>
-            <p class="muted">Look at the big screen! 📺</p>
+            <p class="muted">${t('p.lookScreen')}</p>
           </div>
           ${foot(s)}`);
       },
@@ -358,7 +356,7 @@
         go(keyOf(s), `
           <div class="p-center">
             <div class="big-emoji drum">🥁</div>
-            <h1>And the winners are…</h1>
+            <h1>${t('p.drumroll')}</h1>
           </div>`);
         later(4700, () => {
           const rank = s.me.rank;
@@ -367,10 +365,10 @@
           go(keyOf(s), `
             <div class="p-center">
               <div class="big-emoji pop-big">${top ? medals[rank] : '🌟'}</div>
-              <h1 class="result-title">${rank === 1 ? 'You won! Champion!' : top ? `${ordinal(rank)} place! Amazing!` : `You finished ${ordinal(rank)}!`}</h1>
-              <p class="big-score">${s.me.score.toLocaleString()} points</p>
-              <p>You got ${s.me.correct} of ${s.total} right. ${top ? '' : 'Great game! 🎉'}</p>
-              <button class="btn big dark" id="again">Play another game</button>
+              <h1 class="result-title">${rank === 1 ? t('p.won') : top ? t('p.topPlace', { n: rank }) : t('p.finished', { n: rank })}</h1>
+              <p class="big-score">${t('p.points', { n: s.me.score.toLocaleString() })}</p>
+              <p>${t('p.gotRight', { c: s.me.correct, total: s.total })} ${top ? '' : t('p.greatGame')}</p>
+              <button class="btn big dark" id="again">${t('p.playAnother')}</button>
             </div>`, top ? 'good' : '');
           $('#again').onclick = () => {
             link.send({ t: 'leave' });
@@ -397,8 +395,8 @@
       ${head(s)}
       <div class="p-center">
         <div class="chosen ${st.cls} pop-big"><span class="shape">${st.shape}</span></div>
-        <h1>Answer locked in!</h1>
-        <p>${pick(['Fingers crossed! 🤞', 'Ooh, let’s see… 👀', 'Speedy! ⚡', 'Waiting for the others…'])}</p>
+        <h1>${t('p.locked')}</h1>
+        <p>${t('p.waitLines')}</p>
         <div class="dots-loader"><i></i><i></i><i></i></div>
       </div>
       ${foot(s)}`);
@@ -412,6 +410,7 @@
   });
 
   $('#p-sound').textContent = Sound.soundOn ? '🔊' : '🔇';
+  $('#net-status').textContent = t('net.reconnecting');
   bgBubbles(10);
   if (session) resumeSession(); else showPin();
 })();
