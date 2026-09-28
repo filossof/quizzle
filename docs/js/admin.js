@@ -44,6 +44,7 @@
       id: input.id || newId(), title,
       description: str(input.description, 160),
       emoji: Array.from(str(input.emoji, 16) || '🦉').slice(0, 4).join(''),
+      lang: LANGS.includes(input.lang) ? input.lang : '',
       questions, updatedAt: Date.now(),
     };
   }
@@ -150,7 +151,7 @@
         </main>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div>`;
-    $('#new').onclick = () => openEditor({ title: '', emoji: '🦉', description: '', questions: [newQuestion()] });
+    $('#new').onclick = () => openEditor({ title: '', emoji: '🦉', description: '', lang: LANG, questions: [newQuestion()] });
     $('#import').onclick = () => $('#importFile').click();
     $('#importFile').onchange = importFile;
     $('#logout').onclick = () => {
@@ -167,7 +168,7 @@
         <span class="qc-emoji">${esc(q.emoji)}</span>
         <span class="qc-title" dir="auto">${esc(q.title)}</span>
         <span class="qc-desc" dir="auto">${esc(q.description)}</span>
-        <span class="qc-meta">${t('nQuestions', { n: q.questions.length })}</span>
+        <span class="qc-meta">${t('nQuestions', { n: q.questions.length })} · ${t(`a.lang.${q.lang || 'any'}`)}</span>
         <div class="qc-actions">
           <button class="btn small primary" data-act="edit">${t('a.edit')}</button>
           <button class="btn small" data-act="play" title="${t('a.hostThis')}">▶</button>
@@ -247,6 +248,9 @@
         <div class="ed-body">
           <aside class="ed-side">
             <input class="desc-in" id="desc" dir="auto" maxlength="160" placeholder="${t('a.descPlaceholder')}" value="${esc(quiz.description)}">
+            <label class="lang-pick">${t('a.quizLang')}
+              <select id="qlang">${['he', 'en', ''].map(l => `<option value="${l}" ${(quiz.lang || '') === l ? 'selected' : ''}>${t(`a.lang.${l || 'any'}`)}</option>`).join('')}</select>
+            </label>
             <div class="q-thumbs"></div>
             <button class="btn add-q" id="addQ">${t('a.addQ')}</button>
           </aside>
@@ -257,6 +261,7 @@
     $('#back').onclick = () => { if (!dirty || confirm(t('a.leaveConfirm'))) showList(); };
     $('#title').oninput = e => { quiz.title = e.target.value; markDirty(); };
     $('#desc').oninput = e => { quiz.description = e.target.value; markDirty(); };
+    $('#qlang').onchange = e => { quiz.lang = e.target.value; markDirty(); };
     $('#save').onclick = save;
     $('#addQ').onclick = () => {
       quiz.questions.push(newQuestion());

@@ -226,6 +226,10 @@ const STRINGS = {
     'a.saved': '✔ Saved to GitHub',
     'a.savedToast': 'Saved! 🎉',
     'a.notSaved': 'Not saved',
+    'a.quizLang': '🌐 Quiz language',
+    'a.lang.he': 'Hebrew',
+    'a.lang.en': 'English',
+    'a.lang.any': 'All languages',
 
     // Owl trash talk after each question
     'tt.fast': ['⚡ {name} answered so fast, the question is still catching its breath!', '⚡ {name} has turbo fingers! Somebody check for rocket boosters.', '⚡ Blink and you missed it. {name} was already done!'],
@@ -484,6 +488,10 @@ const STRINGS = {
     'a.saved': '✔ נשמר ב-GitHub',
     'a.savedToast': 'נשמר! 🎉',
     'a.notSaved': 'לא נשמר',
+    'a.quizLang': '🌐 שפת החידון',
+    'a.lang.he': 'עברית',
+    'a.lang.en': 'אנגלית',
+    'a.lang.any': 'כל השפות',
 
     'tt.fast': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ ל-{name} יש אצבעות טילים! מישהו בדק אם יש שם מנוע סילון?', '⚡ מצמצתם? פספסתם! התשובה של {name} כבר הייתה בפנים.'],
     'tt.streak': ['🔥 רצף של {n} תשובות נכונות ל-{name}! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! זה חידון או מופע קסמים?'],

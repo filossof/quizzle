@@ -166,8 +166,10 @@
     }
     const grid = $('.quiz-grid');
     if (!grid || screenKey !== 'picker') return;
-    grid.innerHTML = quizzes.length
-      ? quizzes.map((q, i) => `
+    // Show quizzes written in the current language, plus ones marked for any language.
+    const shown = quizzes.filter(q => !q.lang || q.lang === LANG);
+    grid.innerHTML = shown.length
+      ? shown.map((q, i) => `
         <button class="quiz-card pop-in" style="animation-delay:${i * 70}ms;--c:${colorFor(q.title)}" data-id="${esc(q.id)}">
           <span class="qc-emoji">${esc(q.emoji)}</span>
           <span class="qc-title" dir="auto">${esc(q.title)}</span>
