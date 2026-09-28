@@ -16,18 +16,18 @@ A colorful, kid-friendly live quiz game in the style of Kahoot. Show the host sc
 Quizzle is a static site on **GitHub Pages**.
 
 - **The host's browser is the game server.** It registers the Game PIN on the free public [PeerJS](https://peerjs.com) relay (no account needed), and phones connect directly to it over WebRTC. Keep the host tab open and visible during a game.
-- **Quizzes are stored in this repo** in [`docs/quizzes.json`](docs/quizzes.json), and pictures in [`docs/img/`](docs/img). The Quiz Studio saves by committing to the repo through the GitHub API, so every change is kept in git history and nothing gets wiped.
+- **Quizzes are private.** They're stored in a separate **private** repo, `quizzle-data` (`quizzes.json` plus pictures in `img/`). The Quiz Studio saves by committing to it through the GitHub API, so every change is kept in git history and nothing gets wiped. This public repo holds only the game code.
 
-### Connecting the Quiz Studio
+### Unlocking hosting and the Quiz Studio
 
-The studio needs a GitHub key once per device:
+Hosting and editing both need a GitHub key that can access `quizzle-data`. Enter it once per device; both pages share it:
 
 1. Open https://github.com/settings/personal-access-tokens/new
-2. **Repository access** → Only select repositories → `quizzle`
+2. **Repository access** → Only select repositories → `quizzle-data`
 3. **Permissions** → Repository permissions → **Contents: Read and write**
-4. Generate the token and paste it into the studio
+4. Generate the token and paste it into the host page or the studio
 
-Only people with a key can change quizzes. Anyone can play.
+Without the key, nobody can see, host or edit your quizzes. Players never need one: they just join with the PIN.
 
 ## Files
 
@@ -35,11 +35,12 @@ Only people with a key can change quizzes. Anyone can play.
 | --- | --- |
 | `docs/host.html`, `js/host.js` | Big screen |
 | `docs/index.html`, `js/player.js` | Phone |
-| `docs/admin.html`, `js/admin.js`, `js/github.js` | Quiz Studio, which saves to GitHub |
+| `docs/admin.html`, `js/admin.js` | Quiz Studio |
 | `docs/js/game.js` | Game engine (runs in the host's browser) |
 | `docs/js/net.js` | Peer-to-peer connection and auto-reconnect |
 | `docs/js/audio.js` | Web Audio synthesizer for sound effects and music |
-| `docs/js/config.js` | Which repo quizzes are loaded from and saved to |
+| `docs/js/github.js` | Reads and saves quizzes in the private data repo |
+| `docs/js/config.js` | Name of the private data repo |
 
 ## Local testing
 

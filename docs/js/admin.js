@@ -7,10 +7,8 @@
   let quiz = null;
   let current = 0;
   let dirty = false;
-  const previews = new Map(); // uploaded image path → data URL, until GitHub Pages publishes the file
 
   const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('');
-  const previewSrc = src => previews.get(src) || src;
 
   /* Cleans up a quiz before saving; throws a friendly message when something is missing. */
   function sanitizeQuiz(input) {
@@ -54,7 +52,6 @@
       if (!question.image?.startsWith('data:')) continue;
       const data = question.image;
       question.image = await GitHub.uploadImage(data);
-      previews.set(question.image, data);
     }
     return q;
   }
@@ -95,7 +92,7 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  function resizeImage(file, max = 1000) {
+  function resizeImage(file, max = 1600) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -117,43 +114,14 @@
 
   // ── Connect to GitHub ───────────────────────────────────────────────────
   function showLogin(error = '') {
-    const tokenUrl = 'https://github.com/settings/personal-access-tokens/new';
-    app.innerHTML = `
-      <div class="join">
-        ${logoHtml('xl')}
-        <form class="join-card pop-in" id="login" style="width:min(520px,100%)">
-          <div class="join-title">Quiz Studio 🔑</div>
-          <p class="gh-status">Quizzes are saved in your GitHub repo <b>${esc(CONFIG.owner)}/${esc(CONFIG.repo)}</b>, so they're never lost. Connect it once on this device:</p>
-          <ol class="gh-steps">
-            <li>Open <a href="${tokenUrl}" target="_blank" rel="noopener">GitHub → new fine-grained token</a></li>
-            <li>Name it <b>quizzle</b> and pick an expiration (for example, 1 year)</li>
-            <li><b>Repository access</b> → Only select repositories → <b>${esc(CONFIG.repo)}</b></li>
-            <li><b>Permissions</b> → Repository permissions → <b>Contents: Read and write</b></li>
-            <li>Click <b>Generate token</b>, copy it, and paste it here 👇</li>
-          </ol>
-          <input type="password" id="token" placeholder="github_pat_…" aria-label="GitHub token" autocomplete="off">
-          <button class="btn big dark">Connect</button>
-          <div class="form-error">${esc(error)}</div>
-        </form>
-        <a class="link-btn" href="host.html">← Back to games</a>
-      </div>`;
-    $('#token').focus();
-    $('#login').onsubmit = async e => {
-      e.preventDefault();
-      const btn = $('#login .btn');
-      btn.disabled = true;
-      btn.textContent = 'Checking…';
-      try {
-        await GitHub.connect($('#token').value);
-        showList();
-      } catch (err) {
-        GitHub.forget();
-        $('.form-error').textContent = err.status === 401 ? "GitHub didn't accept that key. Copy it again?" : err.message;
-        bump($('#login'), 'shake');
-        btn.disabled = false;
-        btn.textContent = 'Connect';
-      }
-    };
+    GitHub.showKeyForm(app, {
+      title: 'Quiz Studio 🔑',
+      intro: `Your quizzes are saved in your private GitHub repo <b>${esc(GitHub.repoName)}</b>, so only you can see, edit or host them. Connect it once on this device:`,
+      write: true,
+      error,
+      onConnected: showList,
+      backLink: '<a class="link-btn" href="host.html">← Back to games</a>',
+    });
   }
 
   // ── Quiz list ───────────────────────────────────────────────────────────
@@ -171,7 +139,7 @@
           <button class="btn small" id="logout" title="Disconnect GitHub on this device">🔌</button>
         </header>
         <main class="a-main"><div class="quiz-grid"><div class="loading">Loading from GitHub…</div></div>
-          <p class="gh-status" style="text-align:center;margin-top:2rem">💾 Saved in <a href="${GitHub.repoUrl}/blob/${CONFIG.branch}/${CONFIG.dir}/quizzes.json" target="_blank" rel="noopener">${esc(CONFIG.owner)}/${esc(CONFIG.repo)}</a>, and every change is kept in its history.</p>
+          <p class="gh-status" style="text-align:center;margin-top:2rem">💾 Saved in your private repo <a href="${GitHub.repoUrl}/commits/${CONFIG.branch}" target="_blank" rel="noopener">${esc(GitHub.repoName)}</a>, and every change is kept in its history.</p>
         </main>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div>`;
@@ -391,7 +359,7 @@
         <textarea id="q-text" class="qe-text" dir="auto" maxlength="200" rows="2" placeholder="Type your question here…">${esc(q.text)}</textarea>
         <div class="qe-media">
           ${q.image
-            ? `<div class="media-preview"><img src="${esc(previewSrc(q.image))}" alt=""><button class="btn small danger" id="img-rm">✕ Remove image</button></div>`
+            ? `<div class="media-preview"><img alt="" data-path="${esc(q.image)}"><button class="btn small danger" id="img-rm">✕ Remove image</button></div>`
             : `<div class="media-drop" id="drop">
                  <div class="md-icon">🖼️</div>
                  <p>Add a picture <small>(optional)</small></p>
@@ -459,6 +427,9 @@
       else q.answers[i].correct = !q.answers[i].correct;
       changed(true);
     };
+
+    const img = $('.media-preview img');
+    if (img) GitHub.imageUrl(img.dataset.path).then(url => { img.src = url; }).catch(() => { img.alt = '⚠️ Could not load this picture'; });
 
     const setImage = v => { q.image = v; changed(true); };
     $('#img-rm')?.addEventListener('click', () => setImage(''));

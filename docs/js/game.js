@@ -237,7 +237,7 @@ class Game {
     const reveal = this.phase === 'reveal';
     return {
       text: q.text, type: q.type, timeLimit: q.timeLimit, points: q.points,
-      image: forHost ? q.image : undefined,
+      image: forHost ? q.imageUrl || '' : undefined,
       answers: q.answers.map(a => ({ text: a.text, correct: reveal ? a.correct : undefined })),
     };
   }

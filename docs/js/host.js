@@ -68,11 +68,20 @@
     onChange: render,
   };
 
+  /* Downloads the quiz's pictures from the private repo so the big screen can show them. */
+  async function withImages(quiz) {
+    await Promise.all(quiz.questions.map(async q => {
+      q.imageUrl = q.image ? await GitHub.imageUrl(q.image).catch(() => '') : '';
+    }));
+    return quiz;
+  }
+
   async function createGame(quizId) {
-    const quiz = quizzes.find(q => q.id === quizId);
-    if (!quiz) return toast('That quiz could not be found.');
+    const found = quizzes.find(q => q.id === quizId);
+    if (!found) return toast('That quiz could not be found.');
     Sound.sfx('pop');
     go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>Getting the game ready…</h1></div>`);
+    const quiz = await withImages(structuredClone(found));
     for (let tries = 0; tries < 5; tries++) {
       const pin = String(100000 + Math.floor(Math.random() * 900000));
       try {
@@ -90,6 +99,7 @@
   async function resume(snap) {
     go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>Reconnecting your game…</h1><p>Game PIN ${esc(snap.pin)}</p></div>`);
     try {
+      if (GitHub.token) await withImages(snap.quiz);
       net = await goOnline(snap.pin, 8);
       game = Game.restore(snap, handlers);
       game.syncHost();
@@ -126,16 +136,34 @@
   });
 
   // ── Quiz picker ─────────────────────────────────────────────────────────
+  function showLocked(error) {
+    screenKey = 'locked';
+    GitHub.showKeyForm(app, {
+      title: '🔒 This Quizzle is private',
+      intro: 'Only the quiz owner can host these games. Paste your GitHub key to unlock hosting on this device.',
+      write: false,
+      error,
+      onConnected: showPicker,
+    });
+  }
+
   async function showPicker() {
     updateControls();
     Sound.music('lobby');
+    if (!GitHub.token) return showLocked();
     go('picker', `
       <div class="picker">
         <header class="picker-head">${logoHtml('xl')}<p class="tagline">Pick a quiz and let's play!</p></header>
         <div class="quiz-grid"><div class="loading">Loading quizzes…</div></div>
         <a class="admin-link" href="admin.html">✏️ Create or edit quizzes</a>
       </div>`);
-    try { quizzes = await loadQuizzes(); } catch { quizzes = []; }
+    try {
+      quizzes = await GitHub.list();
+    } catch (err) {
+      if ([401, 403, 404].includes(err.status)) { GitHub.forget(); return showLocked(err.message); }
+      quizzes = [];
+      toast(err.message);
+    }
     const grid = $('.quiz-grid');
     if (!grid || screenKey !== 'picker') return;
     grid.innerHTML = quizzes.length
@@ -271,7 +299,7 @@
         const limit = q.timeLimit * 1000;
         const deadline = performance.now() + s.remainingMs;
         go(keyOf(s), `
-          <div class="qscreen">
+          <div class="qscreen ${q.image ? 'has-img' : ''}">
             <div class="q-top"><h1 class="q-text slide-down" dir="auto">${esc(q.text)}</h1></div>
             <div class="q-mid">
               <div class="timer"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="prog" cx="50" cy="50" r="44"/></svg><span class="num">${q.timeLimit}</span></div>

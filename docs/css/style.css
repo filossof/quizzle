@@ -464,14 +464,16 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 .qe-text:focus { box-shadow: var(--shadow), 0 0 0 4px var(--yellow-btn); }
 .qe-media { display: flex; justify-content: center; }
 .media-drop {
-  width: min(460px, 100%); border: 3px dashed rgba(255, 255, 255, .6); border-radius: 18px; padding: 1.2rem; text-align: center;
+  width: min(760px, 100%); min-height: 260px; border: 3px dashed rgba(255, 255, 255, .6); border-radius: 22px; padding: 2rem 1.5rem; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; font-size: 1.15rem;
   background: rgba(255, 255, 255, .1); transition: background .2s;
 }
 .media-drop.over { background: rgba(255, 255, 255, .28); }
-.md-icon { font-size: 2.6rem; }
+.md-icon { font-size: 4.5rem; line-height: 1.1; }
+.md-btns .btn { font-size: 1.05rem; padding: .55em 1.1em; }
 .md-btns { display: flex; gap: .5rem; justify-content: center; margin-top: .5rem; }
 .media-preview { position: relative; }
-.media-preview img { max-height: 260px; max-width: 100%; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); display: block; background: #fff; }
+.media-preview img { max-height: min(480px, 55vh); min-height: 160px; max-width: 100%; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); display: block; background: #fff; }
 .media-preview .btn { position: absolute; top: 10px; right: 10px; }
 .qe-answers { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
 .qe-ans {
@@ -527,3 +529,11 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 .gh-steps { text-align: left; margin: 0; padding-left: 1.2em; line-height: 1.5; font-size: .95rem; }
 .gh-steps a { color: var(--bg1); font-weight: 600; }
 .gh-status { font-size: .9rem; opacity: .9; }
+
+/* Bigger pictures on the big screen: shrink the answer tiles when a question has one. */
+.qscreen.has-img { gap: .8rem; }
+.qscreen.has-img .q-text { font-size: clamp(1.4rem, 2.8vw, 2.5rem); padding: .3em 1em; }
+.qscreen.has-img .tile { min-height: clamp(60px, 9.5vh, 100px); font-size: clamp(1.1rem, 2vw, 1.9rem); }
+.qscreen.has-img .answers { gap: .7rem; }
+.qscreen.has-img .q-img { border-radius: 22px; }
+.gh-help summary { cursor: pointer; font-weight: 600; color: var(--bg1); margin-bottom: .4rem; }
