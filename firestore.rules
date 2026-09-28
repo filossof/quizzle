@@ -3,10 +3,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function owns(data) { return signedIn() && data.owner == request.auth.uid; }
+    // The Quizzle owner, who can open the stats page.
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'filossof@gmail.com' && request.auth.token.email_verified == true;
+    }
 
-    // Quizzes: only the owner can see or change them.
+    // Quizzes: only the owner can see or change them (the Quizzle owner can also see them, for stats).
     match /quizzes/{id} {
-      allow read, delete: if owns(resource.data);
+      allow read: if owns(resource.data) || isAdmin();
+      allow delete: if owns(resource.data);
       allow create: if owns(request.resource.data);
       allow update: if owns(resource.data) && owns(request.resource.data);
     }
@@ -26,6 +31,19 @@ service cloud.firestore {
       allow get: if signedIn();
       allow create: if owns(request.resource.data);
       allow delete: if owns(resource.data);
+    }
+
+    // Profiles for the stats page: each person writes only their own.
+    match /users/{uid} {
+      allow get: if (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Log of hosted games, for the stats page.
+    match /games/{id} {
+      allow create: if owns(request.resource.data);
+      allow read: if isAdmin();
     }
   }
 }

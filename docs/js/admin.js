@@ -269,6 +269,7 @@
           <a class="btn" href="host.html" target="_blank">${t('a.host')}</a>
           <button class="btn" id="import">${t('a.import')}</button>
           <button class="btn primary" id="new">${t('a.new')}</button>
+          <a class="btn small" id="statsLink" href="stats.html" title="${t('s.title')}" hidden>📊</a>
           ${langButton('btn small')}
           ${userChip()}
         </header>
@@ -283,6 +284,7 @@
 
     try { quizzes = await Store.list(); } catch (err) { return fail(err); }
     showMigrationOffer();
+    Store.isAdmin().then(ok => { const l = $('#statsLink'); if (l) l.hidden = !ok; });
     const grid = $('.quiz-grid');
     if (!grid) return;
     grid.innerHTML = quizzes.length ? quizzes.map((q, i) => `

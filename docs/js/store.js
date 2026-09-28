@@ -14,7 +14,21 @@ const Store = (() => {
 
   let user = null;
   const images = new Map(); // "fs:<id>" → data URL
-  const ready = new Promise(resolve => auth.onAuthStateChanged(u => { user = u; resolve(u); }));
+  const ready = new Promise(resolve => auth.onAuthStateChanged(u => {
+    user = u;
+    if (u) recordVisit(u);
+    resolve(u);
+  }));
+
+  /* Keeps a small profile per person (name, email, when they joined and were last active),
+     for the owner's stats page. Only the person themselves and the owner can read it. */
+  function recordVisit(u) {
+    db.collection('users').doc(u.uid).set({
+      name: u.displayName || '', email: u.email || '', photo: u.photoURL || '',
+      joinedAt: Date.parse(u.metadata.creationTime) || Date.now(),
+      lastSeen: Date.now(),
+    }, { merge: true }).catch(() => { });
+  }
   auth.getRedirectResult().catch(() => { });
 
   const uid = () => {
@@ -94,6 +108,34 @@ const Store = (() => {
       const id = randomId();
       await db.collection('shares').doc(id).set(clean({ owner: uid(), createdAt: Date.now(), quiz: strip({ ...quiz, id: undefined }) }));
       return new URL(`admin.html?share=${id}`, location.href).href;
+    },
+
+    /* Logs a hosted game for the stats page (who hosted what, how many players). */
+    recordGame(quiz, players) {
+      if (!user) return;
+      db.collection('games').add({ owner: user.uid, at: Date.now(), quizId: quiz.id || '', quizTitle: quiz.title || '', players })
+        .catch(() => { });
+      db.collection('users').doc(user.uid).set({
+        gamesHosted: firebase.firestore.FieldValue.increment(1),
+        playersHosted: firebase.firestore.FieldValue.increment(players),
+        lastGameAt: Date.now(),
+      }, { merge: true }).catch(() => { });
+    },
+
+    /* True when the signed-in person is the Quizzle owner (the database decides). */
+    async isAdmin() {
+      if (!user) return false;
+      try { await db.collection('users').limit(1).get(); return true; } catch { return false; }
+    },
+
+    /* Everything the owner's stats page needs. Fails for anyone else. */
+    async adminData() {
+      const [users, quizzes, games] = await Promise.all(['users', 'quizzes', 'games'].map(c => db.collection(c).get()));
+      return {
+        users: users.docs.map(d => ({ ...d.data(), uid: d.id })),
+        quizzes: quizzes.docs.map(d => { const q = d.data(); return { id: d.id, owner: q.owner, title: q.title, emoji: q.emoji, questions: (q.questions || []).length, updatedAt: q.updatedAt, lang: q.lang }; }),
+        games: games.docs.map(d => ({ ...d.data(), id: d.id })),
+      };
     },
 
     async getShare(id) {

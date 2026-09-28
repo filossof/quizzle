@@ -253,7 +253,12 @@
             <div class="player-cloud"></div>
             <div class="lobby-empty">${t('host.waiting')}<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
           </div>`);
-        $('#start').onclick = () => { $('#start').disabled = true; Sound.sfx('start'); action('start'); };
+        $('#start').onclick = () => {
+          $('#start').disabled = true;
+          Sound.sfx('start');
+          Store.recordGame(game.quiz, game.players.size);
+          action('start');
+        };
         $('.player-cloud').onclick = e => {
           const chip = e.target.closest('.player-chip');
           if (chip && confirm(t('host.kickConfirm', { name: chip.dataset.name }))) action('kick', chip.dataset.id);

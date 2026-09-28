@@ -19,6 +19,7 @@ Quizzle is a static site on **GitHub Pages**.
 
 - **The host's browser is the game server.** It registers the Game PIN on the free public [PeerJS](https://peerjs.com) relay (no account needed), and phones connect directly to it over WebRTC. Keep the host tab open and visible during a game.
 - **Everyone has their own private quizzes.** Hosts and quiz makers **sign in with Google**; quizzes and pictures are stored in **Firebase Firestore** (project `quizzle-a3132`, free Spark plan) under the owner's account. The rules in [`firestore.rules`](firestore.rules) make Google's servers refuse any read or write of a quiz that isn't yours. Players on phones never sign in.
+- **Owner stats:** [`stats.html`](https://filossof.github.io/quizzle/stats.html) shows who signed up, who's active, quizzes made and games hosted. Only the owner's account can read that data (see `isAdmin()` in `firestore.rules`); a 📊 button appears in the Quiz Studio for the owner.
 - **Sharing:** the 🔗 button on a quiz creates a link. A friend who opens it signs in and gets their own copy (with its own copy of the pictures). The original stays yours.
 
 ### Changing the database rules
@@ -32,6 +33,7 @@ The rules live in `firestore.rules`. After changing them, paste them into the Fi
 | `docs/host.html`, `js/host.js` | Big screen |
 | `docs/index.html`, `js/player.js` | Phone |
 | `docs/admin.html`, `js/admin.js` | Quiz Studio |
+| `docs/stats.html`, `js/stats.js` | Owner-only stats page |
 | `docs/js/game.js` | Game engine (runs in the host's browser) |
 | `docs/js/net.js` | Peer-to-peer connection and auto-reconnect |
 | `docs/js/audio.js` | Web Audio synthesizer for sound effects and music |
