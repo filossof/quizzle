@@ -568,6 +568,9 @@
     c.innerHTML = `
       <button class="ctl unlock" id="c-unlock">${t('host.tapSound')}</button>
       ${langButton()}
+      <select class="ctl theme-select" id="c-theme" title="${t('theme.label')}" aria-label="${t('theme.label')}">
+        ${Sound.themes.map(id => `<option value="${id}" ${id === Sound.theme ? 'selected' : ''}>${t(`theme.${id}`)}</option>`).join('')}
+      </select>
       <button class="ctl" id="c-sound" title="${t('sound')}">🔊</button>
       <button class="ctl" id="c-full" title="${t('host.fullscreen')}">⛶</button>
       <button class="ctl" id="c-end" title="${t('host.endGame')}" hidden>✖</button>`;
@@ -576,6 +579,7 @@
       $('#c-sound').textContent = Sound.soundOn ? '🔊' : '🔇';
     };
     $('#c-sound').onclick = () => { Sound.toggleSound(); paint(); };
+    $('#c-theme').onchange = e => { Sound.setTheme(e.target.value); e.target.blur(); };
     $('#c-full').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
     $('#c-end').onclick = () => {
       if (!confirm(t('host.endConfirm'))) return;

@@ -63,6 +63,13 @@ const STRINGS = {
     'host.endGame': 'End game',
     'host.endConfirm': 'End this game for everyone?',
     'host.langConfirm': 'Switching language reloads the screen. The game will continue. OK?',
+    'theme.label': 'Background music',
+    'theme.bouncy': '🎈 Bouncy',
+    'theme.tropical': '🌴 Tropical',
+    'theme.space': '🚀 Space',
+    'theme.lofi': '🎧 Chill',
+    'theme.arcade': '🕹️ Arcade',
+    'theme.musicbox': '🎠 Music box',
 
     // Messages sent to phones
     'ended.byHost': 'The game is over.',
@@ -304,6 +311,13 @@ const STRINGS = {
     'host.endGame': 'סיום משחק',
     'host.endConfirm': 'לסיים את המשחק לכולם?',
     'host.langConfirm': 'החלפת השפה טוענת מחדש את המסך. המשחק ימשיך. להמשיך?',
+    'theme.label': 'מוזיקת רקע',
+    'theme.bouncy': '🎈 קופצני',
+    'theme.tropical': '🌴 טרופי',
+    'theme.space': '🚀 חלל',
+    'theme.lofi': '🎧 רגוע',
+    'theme.arcade': '🕹️ ארקייד',
+    'theme.musicbox': '🎠 תיבת נגינה',
 
     'ended.byHost': 'המשחק הסתיים.',
     'ended.thanks': 'תודה ששיחקתם! 🎉',

@@ -585,3 +585,12 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 /* Keep the card's description clear of the Play button */
 .quiz-card .qc-meta { margin-top: auto; padding-top: 1rem; }
 button.quiz-card { padding-bottom: 1.25rem; }
+
+/* Background music picker in the host's top bar */
+.ctl.theme-select {
+  appearance: none; -webkit-appearance: none; font: inherit; font-size: .95rem; font-weight: 600;
+  padding: 0 1.9em 0 .8em; cursor: pointer; outline: none;
+  background: rgba(255, 255, 255, .18) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right .7em center / .7em;
+}
+[dir="rtl"] .ctl.theme-select { padding: 0 .8em 0 1.9em; background-position: left .7em center; }
+.ctl.theme-select option { color: var(--ink); background: #fff; }

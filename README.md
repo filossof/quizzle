@@ -6,7 +6,7 @@ A colorful, kid-friendly live quiz game in the style of Kahoot. Show the host sc
 
 - **Big-screen host view** with a lobby, animated countdown, answer chart, scoreboard and a podium with confetti
 - **Phone controller** with big colorful answer buttons, emoji avatars, a random-name 🎲 button, vibration, and friendly feedback after every answer
-- **Sounds and music**: lobby tune, tense question music, victory fanfare, drumroll, ticks, dings. All of it is generated live in the browser
+- **Sounds and music**: 6 background music themes to pick from on the host screen (🎈 Bouncy, 🌴 Tropical, 🚀 Space, 🎧 Chill, 🕹️ Arcade, 🎠 Music box), each with a calm lobby tune and a softer question tune, plus a victory fanfare, drumroll, ticks and dings. All of it is generated live in the browser
 - **Quiz Studio** for making quizzes: multiple choice or true/false, images, time limits, double points, import/export. Hebrew and other right-to-left languages work
 - Scoring rewards speed (up to 1000 points) plus answer streak bonuses 🔥
 - A cheeky owl 🦉 comments on every answer reveal: brags about the fastest players and streaks, and gently teases a missed answer (never the same kid twice in a row)

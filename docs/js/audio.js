@@ -184,85 +184,265 @@ const Sound = (() => {
     },
   };
 
-  // ── Music: tiny step sequencer ───────────────────────────────────────────
+  // ── Music: tiny step sequencer with six themes ───────────────────────────
+  // Each theme has a calm "lobby" tune (lobby + scoreboard) and a softer, tenser
+  // "question" tune. The victory tune is shared.
   const CH = {
     C: ['C3', 'C4', 'E4', 'G4'], Am: ['A2', 'A3', 'C4', 'E4'], F: ['F2', 'F3', 'A3', 'C4'],
     G: ['G2', 'G3', 'B3', 'D4'], E: ['E2', 'E3', 'G#3', 'B3'], Dm: ['D3', 'D4', 'F4', 'A4'],
+    Bb: ['Bb2', 'Bb3', 'D4', 'F4'], Fmaj7: ['F2', 'A3', 'C4', 'E4'], Em7: ['E2', 'G3', 'B3', 'D4'],
+    Dm7: ['D2', 'F3', 'A3', 'C4'], Cmaj7: ['C2', 'E3', 'G3', 'B3'],
   };
   const mel = s => s.trim().split(/\s+/);
   const lead = (d, n, t, dur) => {
     tone(d, { n, t, dur: dur * 0.95, vol: 0.07, cutoff: 2600, attack: 0.01 });
     tone(d, { n, t, dur: dur * 0.95, type: 'triangle', vol: 0.12, attack: 0.01, detune: 6 });
   };
+  // Instruments
+  const marimba = (d, n, t, vol = 0.12) => {
+    tone(d, { n, t, dur: 0.35, type: 'sine', vol, attack: 0.003 });
+    tone(d, { n: midi(n) + 24, t, dur: 0.06, type: 'sine', vol: vol * 0.25, attack: 0.002 });
+  };
+  const bell = (d, n, t, vol = 0.08) => {
+    tone(d, { n, t, dur: 1.4, type: 'sine', vol, attack: 0.003 });
+    tone(d, { n: midi(n) + 12, t, dur: 0.7, type: 'sine', vol: vol * 0.3, attack: 0.003 });
+    tone(d, { f: hz(n) * 2.76, t, dur: 0.25, type: 'sine', vol: vol * 0.12, attack: 0.002 });
+  };
+  const rhodes = (d, n, t, dur, vol = 0.07) => {
+    tone(d, { n, t, dur, type: 'triangle', vol, attack: 0.01 });
+    tone(d, { n: midi(n) + 12, t, dur: dur * 0.6, type: 'sine', vol: vol * 0.35, attack: 0.01 });
+  };
+  const pad = (d, notes, t, dur, vol = 0.03) => notes.forEach(n => {
+    tone(d, { n, t, dur, type: 'sawtooth', vol, attack: 0.4, cutoff: 900, detune: -8 });
+    tone(d, { n, t, dur, type: 'sawtooth', vol, attack: 0.4, cutoff: 900, detune: 8 });
+  });
+  const synthLead = (d, n, t, dur) => {
+    tone(d, { n, t, dur: dur * 0.95, type: 'triangle', vol: 0.09, attack: 0.03 });
+    tone(d, { n, t, dur: dur * 0.95, type: 'sine', vol: 0.05, attack: 0.03, detune: 10 });
+  };
+  const chip = (d, n, t, dur, vol = 0.045) => tone(d, { n, t, dur: dur * 0.9, vol, attack: 0.002 });
+  const shaker = (d, t, vol = 0.025) => noise(d, { t, dur: 0.05, vol, type: 'bandpass', f: 7000, q: 1.2 });
+  const tick = (d, t, vol = 0.04) => tone(d, { f: 1900, t, dur: 0.03, type: 'sine', vol });
+
   // '-' is a rest, '_' holds the previous note.
-  function melody(tokens, i, t, s, d) {
+  function melody(tokens, i, t, s, d, voice = lead) {
     const n = tokens[i % tokens.length];
     if (n === '-' || n === '_') return;
     let len = 1;
     while (tokens[(i + len) % tokens.length] === '_') len++;
-    lead(d, n, t, len * s);
+    voice(d, n, t, len * s);
   }
   const bounceBass = (d, root, i, t, s) =>
     tone(d, { n: midi(root) + (i % 2 ? 12 : 0), t, dur: s * 0.8, type: 'triangle', vol: 0.4 });
+  const arpNote = (tones, i, oct) => midi(tones[[0, 1, 2, 1][i % 4]]) + oct;
 
-  const TRACKS = {
-    lobby: {
-      bpm: 116, div: 2, bars: ['C', 'Am', 'F', 'G', 'C', 'Am', 'F', 'G'],
-      melody: mel(`E5 G5 C6 G5 E5 - D5 E5   C5 E5 A5 G5 E5 - C5 D5   F5 A5 C6 A5 G5 F5 E5 D5   D5 _ G5 _ B4 _ - -
-                   G5 _ E5 G5 C6 _ B5 C6   A5 _ E5 A5 C6 _ B5 A5   F5 _ A5 C6 D6 C6 A5 F5   G5 F5 E5 D5 B4 _ - -`),
-      play(d, chord, i, g, t, s) {
-        const [root, ...tones] = CH[chord];
-        bounceBass(d, root, i, t, s);
-        if (i === 2 || i === 6) tones.forEach(n => tone(d, { n: midi(n) + 12, t, dur: 0.14, vol: 0.035, cutoff: 1800 }));
-        melody(this.melody, g, t, s, d);
-        if (i === 0 || i === 4) kick(d, t, 0.45);
-        if (i === 2 || i === 6) snare(d, t, 0.07);
-        if (i % 2) hat(d, t, 0.03);
-      },
-    },
-    question: {
-      bpm: 128, div: 4, bars: ['Am', 'Am', 'F', 'F', 'C', 'C', 'E', 'E'],
-      play(d, chord, i, g, t, s) {
-        const [root, ...tones] = CH[chord];
-        if (i % 2 === 0) tone(d, { n: root, t, dur: s * 1.6, type: 'sawtooth', vol: 0.16, cutoff: 600 });
-        const oct = (i >> 2) % 2 ? 24 : 12;
-        tone(d, { n: midi(tones[[0, 1, 2, 1][i % 4]]) + oct, t, dur: s * 0.9, vol: 0.045, cutoff: 2600 });
-        if (i % 4 === 0) kick(d, t, 0.5);
-        if (i === 4 || i === 12) snare(d, t, 0.07);
-        if (i % 2) hat(d, t, 0.03);
-        if (g % 64 === 0) noise(d, { t, dur: 0.8, vol: 0.06, f: 5000 });
-      },
-    },
-    victory: {
-      bpm: 124, div: 2, bars: ['C', 'F', 'G', 'C', 'Am', 'F', 'G', 'C'],
-      melody: mel(`C5 _ E5 G5 C6 _ _ G5   A5 _ F5 A5 C6 _ A5 _   B5 _ G5 B5 D6 _ B5 _   C6 _ _ _ G5 _ E5 _
-                   A5 _ E5 A5 C6 _ B5 A5   F5 _ A5 C6 F6 _ E6 D6   D6 _ B5 _ G5 _ B5 D6   C6 _ _ _ - - - -`),
-      play(d, chord, i, g, t, s) {
-        const [root, ...tones] = CH[chord];
-        bounceBass(d, root, i, t, s);
-        if (i % 2) tones.forEach(n => tone(d, { n: midi(n) + 12, t, dur: 0.12, vol: 0.03, cutoff: 2000 }));
-        melody(this.melody, g, t, s, d);
-        if (i % 2 === 0) kick(d, t, 0.45);
-        if (i === 2 || i === 6) snare(d, t, 0.1);
-        hat(d, t, 0.03);
-        if (g % 32 === 0) noise(d, { t, dur: 1, vol: 0.1, f: 4500 });
-      },
+  const VICTORY = {
+    bpm: 124, div: 2, bars: ['C', 'F', 'G', 'C', 'Am', 'F', 'G', 'C'],
+    melody: mel(`C5 _ E5 G5 C6 _ _ G5   A5 _ F5 A5 C6 _ A5 _   B5 _ G5 B5 D6 _ B5 _   C6 _ _ _ G5 _ E5 _
+                 A5 _ E5 A5 C6 _ B5 A5   F5 _ A5 C6 F6 _ E6 D6   D6 _ B5 _ G5 _ B5 D6   C6 _ _ _ - - - -`),
+    play(d, chord, i, g, t, s) {
+      const [root, ...tones] = CH[chord];
+      bounceBass(d, root, i, t, s);
+      if (i % 2) tones.forEach(n => tone(d, { n: midi(n) + 12, t, dur: 0.12, vol: 0.03, cutoff: 2000 }));
+      melody(this.melody, g, t, s, d);
+      if (i % 2 === 0) kick(d, t, 0.45);
+      if (i === 2 || i === 6) snare(d, t, 0.1);
+      hat(d, t, 0.03);
+      if (g % 32 === 0) noise(d, { t, dur: 1, vol: 0.1, f: 4500 });
     },
   };
 
+  const THEMES = {
+    // 🎈 Bouncy: the original happy pop tune
+    bouncy: {
+      lobby: {
+        bpm: 116, div: 2, bars: ['C', 'Am', 'F', 'G', 'C', 'Am', 'F', 'G'],
+        melody: mel(`E5 G5 C6 G5 E5 - D5 E5   C5 E5 A5 G5 E5 - C5 D5   F5 A5 C6 A5 G5 F5 E5 D5   D5 _ G5 _ B4 _ - -
+                     G5 _ E5 G5 C6 _ B5 C6   A5 _ E5 A5 C6 _ B5 A5   F5 _ A5 C6 D6 C6 A5 F5   G5 F5 E5 D5 B4 _ - -`),
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          bounceBass(d, root, i, t, s);
+          if (i === 2 || i === 6) tones.forEach(n => tone(d, { n: midi(n) + 12, t, dur: 0.14, vol: 0.035, cutoff: 1800 }));
+          melody(this.melody, g, t, s, d);
+          if (i === 0 || i === 4) kick(d, t, 0.45);
+          if (i === 2 || i === 6) snare(d, t, 0.07);
+          if (i % 2) hat(d, t, 0.03);
+        },
+      },
+      question: {
+        bpm: 128, div: 4, bars: ['Am', 'Am', 'F', 'F', 'C', 'C', 'E', 'E'],
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i % 2 === 0) tone(d, { n: root, t, dur: s * 1.6, type: 'sawtooth', vol: 0.16, cutoff: 600 });
+          tone(d, { n: arpNote(tones, i, (i >> 2) % 2 ? 24 : 12), t, dur: s * 0.9, vol: 0.045, cutoff: 2600 });
+          if (i % 4 === 0) kick(d, t, 0.5);
+          if (i === 4 || i === 12) snare(d, t, 0.07);
+          if (i % 2) hat(d, t, 0.03);
+        },
+      },
+    },
+
+    // 🌴 Tropical: marimba and shakers on a sunny beach
+    tropical: {
+      lobby: {
+        bpm: 104, div: 2, bars: ['F', 'Bb', 'C', 'F', 'F', 'Bb', 'C', 'F'],
+        melody: mel(`A5 _ C6 A5 G5 F5 G5 _   F5 _ D5 F5 G5 _ - -   E5 _ G5 E5 D5 C5 D5 _   F5 _ - - A4 C5 F5 _
+                     A5 G5 A5 C6 _ A5 G5 F5   D5 _ F5 _ G5 F5 D5 _   C5 E5 G5 _ E5 D5 C5 _   F5 _ _ _ - - - -`),
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i === 0 || i === 3 || i === 6) tone(d, { n: midi(root) + (i === 6 ? 12 : 0), t, dur: s * 1.2, type: 'sine', vol: 0.3 });
+          if (i === 2 || i === 6) tones.forEach(n => marimba(d, midi(n) + 12, t, 0.035));
+          melody(this.melody, g, t, s, d, (dd, n, tt) => marimba(dd, n, tt, 0.13));
+          if (i === 0 || i === 4) kick(d, t, 0.3);
+          shaker(d, t, i % 2 ? 0.03 : 0.015);
+        },
+      },
+      question: {
+        bpm: 118, div: 4, bars: ['Dm', 'Dm', 'Bb', 'Bb', 'F', 'F', 'C', 'C'],
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i % 4 === 0) tone(d, { n: midi(root) - 12, t, dur: s * 3, type: 'sine', vol: 0.28 });
+          marimba(d, arpNote(tones, i, 12), t, 0.06);
+          if (i % 8 === 0) kick(d, t, 0.3);
+          shaker(d, t, i % 2 ? 0.025 : 0.012);
+        },
+      },
+    },
+
+    // 🚀 Space: dreamy synth pads and arpeggios
+    space: {
+      gain: 1.4, // evens out loudness between themes
+      lobby: {
+        bpm: 96, div: 2, bars: ['Am', 'F', 'C', 'G', 'Am', 'F', 'C', 'G'],
+        melody: mel(`E5 _ _ _ A5 _ G5 _   F5 _ _ _ E5 _ C5 _   E5 _ _ _ G5 _ C6 _   B5 _ _ _ _ _ - -
+                     A5 _ _ _ C6 _ B5 _   A5 _ _ _ G5 _ F5 _   E5 _ G5 _ C6 _ B5 _   G5 _ _ _ - - - -`),
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i === 0) pad(d, tones, t, s * 8, 0.022);
+          tone(d, { n: root, t, dur: s * 0.8, type: 'sawtooth', vol: 0.1, cutoff: 380 });
+          tone(d, { n: arpNote(tones, i, 12), t, dur: s * 0.7, vol: 0.025, cutoff: 1800 });
+          melody(this.melody, g, t, s, d, synthLead);
+          if (i === 0 || i === 4) kick(d, t, 0.35);
+          if (i === 2 || i === 6) snare(d, t, 0.05);
+          if (i % 2) hat(d, t, 0.02);
+        },
+      },
+      question: {
+        bpm: 116, div: 4, bars: ['Am', 'Am', 'F', 'F', 'G', 'G', 'E', 'E'],
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i === 0 && g % 32 === 0) pad(d, tones, t, s * 32, 0.018);
+          if (i % 2 === 0) tone(d, { n: root, t, dur: s * 1.5, type: 'sawtooth', vol: 0.1, cutoff: 350 });
+          tone(d, { n: arpNote(tones, i, (i >> 3) % 2 ? 24 : 12), t, dur: s * 0.8, type: 'sawtooth', vol: 0.022, cutoff: 1500 });
+          if (i % 4 === 0) kick(d, t, 0.35);
+          if (i % 2) hat(d, t, 0.018);
+        },
+      },
+    },
+
+    // 🎧 Chill: laid-back lo-fi electric piano with a lazy swing
+    lofi: {
+      lobby: {
+        bpm: 78, div: 2, swing: 0.16, bars: ['Fmaj7', 'Em7', 'Dm7', 'Cmaj7', 'Fmaj7', 'Em7', 'Dm7', 'Cmaj7'],
+        melody: mel(`C5 _ _ A4 _ _ G4 _   B4 _ _ _ - - D5 _   C5 _ A4 _ F4 _ _ _   E4 _ _ _ - - - -
+                     A4 _ C5 _ E5 _ D5 _   B4 _ G4 _ _ _ - -   A4 _ _ C5 _ _ D5 _   E5 _ _ _ - - - -`),
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i === 0) tones.forEach(n => rhodes(d, n, t, s * 6, 0.045));
+          if (i === 5) tones.forEach(n => rhodes(d, n, t, s * 2.5, 0.025));
+          if (i === 0 || i === 3 || i === 6) tone(d, { n: root, t, dur: s * 2, type: 'sine', vol: 0.3 });
+          melody(this.melody, g, t, s, d, (dd, n, tt, dur) => rhodes(dd, midi(n) + 12, tt, dur, 0.05));
+          if (i === 0 || i === 5) kick(d, t, 0.3);
+          if (i === 2 || i === 6) noise(d, { t, dur: 0.18, vol: 0.035, type: 'bandpass', f: 2500, q: 0.7 });
+          hat(d, t, 0.012);
+        },
+      },
+      question: {
+        bpm: 90, div: 4, swing: 0.12, bars: ['Dm7', 'Dm7', 'Em7', 'Em7', 'Fmaj7', 'Fmaj7', 'Em7', 'Em7'],
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i === 0) tone(d, { n: root, t, dur: s * 12, type: 'sine', vol: 0.25 });
+          if (i % 2 === 0) rhodes(d, arpNote(tones, i / 2, 12), t, s * 1.6, 0.03);
+          if (i === 0 || i === 10) kick(d, t, 0.28);
+          if (i === 4 || i === 12) noise(d, { t, dur: 0.15, vol: 0.03, type: 'bandpass', f: 2500, q: 0.7 });
+          if (i % 2) hat(d, t, 0.012);
+        },
+      },
+    },
+
+    // 🕹️ Arcade: retro 8-bit video game chiptune
+    arcade: {
+      gain: 1.3, // evens out loudness between themes
+      lobby: {
+        bpm: 132, div: 2, bars: ['C', 'Am', 'F', 'G', 'C', 'Am', 'F', 'G'],
+        melody: mel(`G5 _ E5 G5 C6 _ G5 _   A5 _ E5 A5 C6 _ A5 _   F5 G5 A5 _ C6 A5 F5 _   G5 _ B5 _ D6 _ - -
+                     E6 _ D6 C6 G5 _ E5 _   A5 _ C6 B5 A5 _ E5 _   F5 _ A5 C6 D6 C6 A5 F5   G5 _ B5 D6 C6 _ - -`),
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          tone(d, { n: midi(root) + (i % 2 ? 12 : 0), t, dur: s * 0.7, type: 'triangle', vol: 0.3 });
+          if (i % 2) chip(d, arpNote(tones, i >> 1, 12), t, s * 0.5, 0.02);
+          melody(this.melody, g, t, s, d, (dd, n, tt, dur) => chip(dd, n, tt, dur, 0.04));
+          if (i === 0 || i === 4) noise(d, { t, dur: 0.06, vol: 0.12, type: 'lowpass', f: 400 });
+          if (i === 2 || i === 6) noise(d, { t, dur: 0.07, vol: 0.06, type: 'bandpass', f: 2500 });
+          if (i % 2) noise(d, { t, dur: 0.02, vol: 0.02, f: 9000 });
+        },
+      },
+      question: {
+        bpm: 144, div: 4, bars: ['Am', 'Am', 'F', 'F', 'G', 'G', 'E', 'E'],
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i % 2 === 0) tone(d, { n: midi(root) + ((i >> 1) % 2 ? 12 : 0), t, dur: s * 1.4, type: 'triangle', vol: 0.28 });
+          chip(d, arpNote(tones, i, (i >> 2) % 2 ? 24 : 12), t, s, 0.022);
+          if (i % 4 === 0) noise(d, { t, dur: 0.05, vol: 0.1, type: 'lowpass', f: 400 });
+          if (i % 2) noise(d, { t, dur: 0.02, vol: 0.015, f: 9000 });
+        },
+      },
+    },
+
+    // 🎠 Music box: gentle fairy-tale bells, no drums
+    musicbox: {
+      gain: 1.35, // evens out loudness between themes
+      lobby: {
+        bpm: 88, div: 2, bars: ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'C'],
+        melody: mel(`E5 _ G5 _ C6 _ B5 _   D6 _ B5 _ G5 _ - -   C6 _ A5 _ E5 _ A5 _   F5 _ A5 _ C6 _ - -
+                     G5 _ E5 _ C5 _ E5 _   D5 _ G5 _ B5 _ D6 _   C6 _ A5 _ F5 _ A5 _   C6 _ _ _ - - - -`),
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i === 0) tone(d, { n: root, t, dur: s * 7, type: 'sine', vol: 0.18, attack: 0.05 });
+          bell(d, arpNote(tones, i, 0), t, 0.035);
+          melody(this.melody, g, t, s, d, (dd, n, tt) => bell(dd, midi(n) + 12, tt, 0.07));
+        },
+      },
+      question: {
+        bpm: 100, div: 4, bars: ['Am', 'Am', 'E', 'E', 'F', 'F', 'E', 'E'],
+        play(d, chord, i, g, t, s) {
+          const [root, ...tones] = CH[chord];
+          if (i % 8 === 0) tone(d, { n: root, t, dur: s * 7, type: 'sine', vol: 0.2, attack: 0.03 });
+          if (i % 2 === 0) bell(d, arpNote(tones, i / 2, 12), t, 0.035);
+          if (i % 4 === 0) tick(d, t, 0.035);
+        },
+      },
+    },
+  };
+  const THEME_IDS = Object.keys(THEMES);
+  let theme = (() => { try { const v = localStorage.getItem('quizzle.theme'); return THEMES[v] ? v : 'bouncy'; } catch { return 'bouncy'; } })();
+  const trackFor = name => (name === 'victory' ? VICTORY : THEMES[theme][name]);
+
   function startMusic(name) {
     stopCurrent(0.05);
-    const tr = TRACKS[name];
+    const tr = trackFor(name);
     if (!tr) return;
     const bus = ctx.createGain();
+    bus.gain.value = name === 'victory' ? 1 : THEMES[theme].gain || 1;
     bus.connect(musicBus);
     const perBar = tr.div * 4, total = perBar * tr.bars.length, s = 60 / tr.bpm / tr.div;
-    const cur = { name, bus, step: 0, next: ctx.currentTime + 0.08 };
+    const cur = { name, theme, bus, step: 0, next: ctx.currentTime + 0.08 };
     cur.timer = setInterval(() => {
       if (cur.next < ctx.currentTime - 0.05) cur.next = ctx.currentTime + 0.05; // tab was asleep
       while (cur.next < ctx.currentTime + 0.2) {
         const g = cur.step % total;
-        tr.play(bus, tr.bars[Math.floor(g / perBar)], g % perBar, g, cur.next, s);
+        const swing = tr.swing && g % 2 ? tr.swing * s : 0;
+        tr.play(bus, tr.bars[Math.floor(g / perBar)], g % perBar, g, cur.next + swing, s);
         cur.step++;
         cur.next += s;
       }
@@ -290,7 +470,16 @@ const Sound = (() => {
     },
     music(name) {
       wanted = name;
-      if (ready() && musicOn && current?.name !== name) startMusic(name);
+      if (ready() && musicOn && (current?.name !== name || current?.theme !== theme)) startMusic(name);
+    },
+    themes: THEME_IDS,
+    get theme() { return theme; },
+    /* Switch the background music style; the tune that's playing restarts in the new style. */
+    setTheme(id) {
+      if (!THEMES[id]) return;
+      theme = id;
+      try { localStorage.setItem('quizzle.theme', id); } catch { }
+      if (current && current.name !== 'victory' && ready() && musicOn) startMusic(current.name);
     },
     stopMusic(fade) {
       wanted = null;
