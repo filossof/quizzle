@@ -566,3 +566,11 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 [dir="rtl"] .bubble:first-child::before { clip-path: polygon(0 0, 100% 100%, 0 100%); }
 @keyframes bubbleIn { from { opacity: 0; transform: scale(.3) translateY(20px); } to { opacity: 1; transform: none; } }
 .reveal-foot { align-items: flex-end; }
+
+/* Boy / girl picker on the join screen */
+.gender-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.g-opt {
+  font: inherit; font-size: 1.25rem; font-weight: 600; color: var(--ink); cursor: pointer;
+  background: #f6f3ff; border: 3px solid transparent; border-radius: 14px; padding: .45em; transition: transform .15s;
+}
+.g-opt.sel { border-color: var(--bg1); background: #e6dcff; transform: scale(1.04); }

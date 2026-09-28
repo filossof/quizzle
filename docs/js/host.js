@@ -514,14 +514,14 @@
     if (s.qIndex > 0 && players[0].pos === 0 && players[0].prevPos === 0 && players[0].result.correct) brags.push(['tt.leader', players[0]]);
     if (!brags.length) brags.push(['tt.fast', fastest]);
     const [bragKey, bragP, bragN] = pick(brags);
-    lines.push(fresh(() => th(bragKey, { name: bragP.name, n: bragN })));
+    lines.push(fresh(() => th(bragKey, { name: bragP.name, n: bragN, g: bragP.gender })));
 
     // Tease only players who weren't teased in the last two rounds; otherwise stay nice.
     const targets = bad.filter(p => !recentlyTeased.includes(p.id));
     const target = pick(targets);
     if (target) {
       const key = target.result.lostStreak ? 'tt.lostStreak' : target.result.answered ? 'tt.wrong' : 'tt.sleepy';
-      lines.push(fresh(() => th(key, { name: target.name, n: target.result.lostStreak })));
+      lines.push(fresh(() => th(key, { name: target.name, n: target.result.lostStreak, g: target.gender })));
     }
     recentlyTeased = [target?.id, ...recentlyTeased].slice(0, 2);
     return lines;

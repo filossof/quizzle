@@ -50,7 +50,7 @@ class Game {
     switch (msg.t) {
       case 'check':
         return reply(this.phase === 'podium' ? { error: 'err.finished' } : { ok: true, title: this.quiz.title });
-      case 'join': return reply(this.join(connId, msg.name, msg.avatar));
+      case 'join': return reply(this.join(connId, msg.name, msg.avatar, msg.gender));
       case 'rejoin': return reply(this.rejoin(connId, msg.playerId));
       case 'answer': return player && this.answer(player, msg.choice);
       case 'leave': return player && this.leave(player.id);
@@ -93,7 +93,7 @@ class Game {
   }
 
   // ── Players ───────────────────────────────────────────────────────────────
-  join(connId, rawName, avatar) {
+  join(connId, rawName, avatar, gender) {
     const name = cleanName(rawName);
     if (!name) return { error: 'err.noName' };
     if (this.phase === 'podium') return { error: 'err.finished' };
@@ -103,6 +103,7 @@ class Game {
     }
     const player = {
       id: randomId(), name, avatar: Array.from(String(avatar || '🦉')).slice(0, 4).join(''),
+      gender: ['m', 'f'].includes(gender) ? gender : null,
       score: 0, streak: 0, correct: 0, rank: 1, pos: this.players.size, prevPos: this.players.size,
       answer: null, result: null, connId: null, connected: false, joinedAt: Date.now(),
     };
@@ -253,7 +254,7 @@ class Game {
       reveal: this.reveal,
       answeredCount: players.filter(p => p.answer).length,
       players: players.map(p => ({
-        id: p.id, name: p.name, avatar: p.avatar, score: p.score, rank: p.rank, pos: p.pos, prevPos: p.prevPos,
+        id: p.id, name: p.name, avatar: p.avatar, gender: p.gender, score: p.score, rank: p.rank, pos: p.pos, prevPos: p.prevPos,
         streak: p.streak, correct: p.correct, connected: p.connected, result: p.result,
       })),
     };
@@ -266,7 +267,7 @@ class Game {
       pin: this.pin, title: this.quiz.title, phase: this.phase, qIndex: this.qIndex, total: this.total,
       remainingMs: Math.max(0, this.deadline - Date.now()),
       playerCount: this.players.size,
-      me: { id: p.id, name: p.name, avatar: p.avatar, score: p.score, rank: p.rank, streak: p.streak, correct: p.correct },
+      me: { id: p.id, name: p.name, avatar: p.avatar, gender: p.gender, score: p.score, rank: p.rank, streak: p.streak, correct: p.correct },
       question: this.questionView(false),
       answered: p.answer ? p.answer.choice : null,
       result: p.result,

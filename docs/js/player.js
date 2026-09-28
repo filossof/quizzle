@@ -6,7 +6,10 @@
   let cleanup = [];
   let session = load();
   let pinFromUrl = new URLSearchParams(location.search).get('pin') || '';
-  let myAvatar = pick(AVATARS);
+  const remembered = key => { try { return localStorage.getItem(`quizzle.${key}`) || ''; } catch { return ''; } };
+  const remember = (key, v) => { try { localStorage.setItem(`quizzle.${key}`, v); } catch { } };
+  let myAvatar = remembered('avatar') || pick(AVATARS);
+  let myGender = remembered('gender') || null;
   let wakeLock = null;
 
   function load() { try { return JSON.parse(localStorage.getItem(SESSION)); } catch { return null; } }
@@ -39,6 +42,7 @@
     if (msg.t === 'state') {
       const prev = state;
       state = msg.s;
+      GENDER = state.me.gender;
       const screen = SCREENS[state.phase];
       if (keyOf(state) !== screenKey) screen.enter(state, prev);
       else screen.update?.(state);
@@ -164,6 +168,10 @@
         <form class="join-card name-card pop-in" id="nameForm" autocomplete="off">
           <div class="join-title" dir="auto">${esc(title)}</div>
           <div class="avatar-preview bounce">${myAvatar}</div>
+          <div class="gender-row" role="radiogroup">
+            <button type="button" class="g-opt ${myGender === 'm' ? 'sel' : ''}" data-g="m" role="radio">👦 ${t('p.boy')}</button>
+            <button type="button" class="g-opt ${myGender === 'f' ? 'sel' : ''}" data-g="f" role="radio">👧 ${t('p.girl')}</button>
+          </div>
           <div class="name-row">
             <input id="name" dir="auto" maxlength="16" placeholder="${t('p.nickname')}" aria-label="${t('p.nickname')}" autocapitalize="words" spellcheck="false">
             <button type="button" class="dice" title="${t('p.randomName')}">🎲</button>
@@ -175,7 +183,17 @@
         <button class="link-btn" id="back">${t('p.back')}</button>
       </div>`);
     const form = $('#nameForm'), input = $('#name');
+    GENDER = myGender;
+    input.value = remembered('name');
     input.focus();
+    $('.gender-row').onclick = e => {
+      const b = e.target.closest('.g-opt');
+      if (!b) return;
+      myGender = GENDER = b.dataset.g;
+      $$('.g-opt').forEach(x => x.classList.toggle('sel', x === b));
+      bump(b, 'boing');
+      Sound.sfx('pop');
+    };
     $('#back').onclick = () => { link.disconnect(); showPin(); };
     $('.dice').onclick = () => {
       input.value = t('p.randomNames');
@@ -196,12 +214,16 @@
       e.preventDefault();
       const name = input.value.trim();
       const fail = msg => { $('.form-error').textContent = msg; bump(form, 'shake'); buzz([60, 40, 60]); };
+      if (!myGender) return fail(t('p.needGender'));
       if (!name) return fail(t('p.needName'));
       form.querySelector('.btn').disabled = true;
-      link.request({ t: 'join', name, avatar: myAvatar }).then(res => {
+      link.request({ t: 'join', name, avatar: myAvatar, gender: myGender }).then(res => {
         form.querySelector('.btn').disabled = false;
         if (!res?.ok) return fail(t(res?.error || 'p.joinFail'));
         save({ pin, playerId: res.playerId });
+        remember('name', name);
+        remember('avatar', myAvatar);
+        remember('gender', myGender);
         Sound.sfx('correct');
         keepAwake();
       });

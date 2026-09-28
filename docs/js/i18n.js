@@ -1,6 +1,6 @@
 /* Interface language. Hebrew is the default; the choice is remembered per device.
    Hebrew lines avoid gendered verbs about players (names don't tell us who is a boy or a
-   girl), so they use plural "you" or phrasing without a verb. */
+   girl), unless the player picked 👦/👧 when joining; then the ".m" / ".f" variants are used. */
 const LANGS = ['he', 'en'];
 let LANG = (() => { try { return localStorage.getItem('quizzle.lang'); } catch { return null; } })();
 if (!LANGS.includes(LANG)) LANG = 'he';
@@ -101,6 +101,9 @@ const STRINGS = {
     'p.back': '← Different PIN',
     'p.needName': 'Type a nickname or tap 🎲',
     'p.joinFail': 'Could not join.',
+    'p.boy': 'Boy',
+    'p.girl': 'Girl',
+    'p.needGender': 'Tap 👦 or 👧',
     'p.qOf': 'Question {n} / {total}',
     'p.first': "You're in <b>1st place!</b> 👑",
     'p.place': ({ n }) => `You're in <b>${ordinal(n)} place</b>`,
@@ -326,6 +329,41 @@ const STRINGS = {
     'p.back': '→ קוד אחר',
     'p.needName': 'כתבו כינוי או לחצו על 🎲',
     'p.joinFail': 'לא הצלחנו להצטרף.',
+    'p.boy': 'בן',
+    'p.girl': 'בת',
+    'p.needGender': 'בחרו 👦 או 👧',
+    'p.randomNames.m': () => pick(['נמר מהיר', 'דינוזאור אמיץ', 'ינשוף חכם', 'פינגווין מצחיק', 'ארנב קופצני', 'דרקון נוצץ', 'צב טורבו', 'שועל ערמומי', 'גור מתוק', 'טיל מהיר', 'קוף שובב', 'אריה אמיץ']),
+    'p.randomNames.f': () => pick(['פנדה שמחה', 'קואלה קוסמית', 'לוטרה שובבה', 'לאמה רגועה', 'ארנבת קופצנית', 'דרקונית נוצצת', 'חתולה חכמה', 'ינשופית חכמה', 'זיקית צבעונית', 'נמרה מהירה', 'דולפינה עליזה', 'פרפרית זוהרת']),
+    'p.kicked.m': 'הוצאת מהמשחק',
+    'p.kicked.f': 'הוצאת מהמשחק',
+    'p.thanks.m': 'תודה ששיחקת!',
+    'p.thanks.f': 'תודה ששיחקת!',
+    'p.lostText.m': 'בדוק את האינטרנט ולחץ למטה.',
+    'p.lostText.f': 'בדקי את האינטרנט ולחצי למטה.',
+    'p.resuming.m': 'מחזירים אותך למשחק…',
+    'p.resuming.f': 'מחזירים אותך למשחק…',
+    'p.behind.m': '{gap} נקודות מאחורי {name}. אתה יכול להשיג!',
+    'p.behind.f': '{gap} נקודות מאחורי {name}. את יכולה להשיג!',
+    'p.youreIn.m': 'נכנסת! 🎉',
+    'p.youreIn.f': 'נכנסת! 🎉',
+    'p.seeName.m': 'רואה את השם שלך על המסך הגדול? 👀',
+    'p.seeName.f': 'רואה את השם שלך על המסך הגדול? 👀',
+    'p.getReady.m': 'היכון…',
+    'p.getReady.f': 'היכוני…',
+    'p.correct.m': ['נכון!', 'מדהים!', 'בול!', 'גאון!', 'אלוף!', 'תותח!'],
+    'p.correct.f': ['נכון!', 'מדהים!', 'בול!', 'גאונה!', 'אלופה!', 'תותחית!'],
+    'p.cheer.m': ['את הבאה תצליח! 💪', 'אתה יכול, ממשיכים! 🌟', 'אל תוותר! 🚀'],
+    'p.cheer.f': ['את הבאה תצליחי! 💪', 'את יכולה, ממשיכים! 🌟', 'אל תוותרי! 🚀'],
+    'p.beQuick.m': 'בפעם הבאה, תהיה מהיר יותר! ⚡',
+    'p.beQuick.f': 'בפעם הבאה, תהיי מהירה יותר! ⚡',
+    'p.lookScreen.m': 'תסתכל על המסך הגדול! 📺',
+    'p.lookScreen.f': 'תסתכלי על המסך הגדול! 📺',
+    'p.won.m': 'מקום ראשון! אלוף!',
+    'p.won.f': 'מקום ראשון! אלופה!',
+    'p.finished.m': 'סיימת במקום {n}!',
+    'p.finished.f': 'סיימת במקום {n}!',
+    'p.gotRight.m': 'צדקת ב-{c} מתוך {total} שאלות.',
+    'p.gotRight.f': 'צדקת ב-{c} מתוך {total} שאלות.',
     'p.qOf': 'שאלה {n} / {total}',
     'p.first': '<b>מקום ראשון!</b> 👑',
     'p.place': '<b>מקום {n}</b>',
@@ -456,13 +494,34 @@ const STRINGS = {
     'tt.wrong': ['🙈 התשובה של {name} יצאה לחופשה. שלחו גלויה! 🏖️', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 כיוון מעולה, {name}! מטרה לא נכונה, אבל כיוון מעולה.', '🍌 {name}: אפס נקודות, אבל מאה על ביטחון עצמי!'],
     'tt.sleepy': ['😴 {name} כנראה באמצע לספור כבשים 🐑', '🍪 {name} כנראה בהפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
     'tt.lostStreak': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! הרצף של {name} ({n} ברצף) עשה פוף!'],
+
+    'tt.fast.m': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ {name} ענה כל כך מהר, שהשאלה עוד לא הספיקה להתיישב!', '⚡ מצמצתם? פספסתם! {name} כבר מזמן ענה.'],
+    'tt.fast.f': ['⚡ {name} על טורבו! השאלה עוד מנסה להסדיר נשימה.', '⚡ {name} ענתה כל כך מהר, שהשאלה עוד לא הספיקה להתיישב!', '⚡ מצמצתם? פספסתם! {name} כבר מזמן ענתה.'],
+    'tt.streak.m': ['🔥 {name} ברצף של {n} תשובות! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! הוא קוסם או מה?'],
+    'tt.streak.f': ['🔥 {name} ברצף של {n} תשובות! מישהו שיביא מטף!', '🔥 {n} ברצף ל-{name}! היא קוסמת או מה?'],
+    'tt.climb.m': ['🚀 {name} זינק {n} מקומות! חגרו חגורות!', '🧗 {name} טיפס {n} מקומות כמו עז הרים!'],
+    'tt.climb.f': ['🚀 {name} זינקה {n} מקומות! חגרו חגורות!', '🧗 {name} טיפסה {n} מקומות כמו עז הרים!'],
+    'tt.leader.m': ['👑 {name} עדיין מחזיק בכתר. מישהו יעצור אותו?', '👑 {name} עדיין בפסגה, והכיסא שם כבר ממש נוח לו!'],
+    'tt.leader.f': ['👑 {name} עדיין מחזיקה בכתר. מישהו יעצור אותה?', '👑 {name} עדיין בפסגה, והכיסא שם כבר ממש נוח לה!'],
+    'tt.wrong.m': ['🙈 {name} בחר תשובה בביטחון מלא… ובטעות מלאה!', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 {name} כיוון מעולה! רק למטרה הלא נכונה.', '🏖️ התשובה של {name} יצאה לחופשה. שלחו לו גלויה!'],
+    'tt.wrong.f': ['🙈 {name} בחרה תשובה בביטחון מלא… ובטעות מלאה!', '🐢 המוח של {name} עדיין בטעינה… 12%', '🎯 {name} כיוונה מעולה! רק למטרה הלא נכונה.', '🏖️ התשובה של {name} יצאה לחופשה. שלחו לה גלויה!'],
+    'tt.sleepy.m': ['😴 {name} היה עסוק בלספור כבשים 🐑', '🍪 {name} כנראה יצא להפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
+    'tt.sleepy.f': ['😴 {name} הייתה עסוקה בלספור כבשים 🐑', '🍪 {name} כנראה יצאה להפסקת חטיף.', '📵 האצבעות של {name} שכחו שיש להן עבודה!'],
+    'tt.lostStreak.m': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! {name} איבד רצף של {n}. פוף!'],
+    'tt.lostStreak.f': ['💔 הרצף של {name} החליק על קליפת בננה 🍌', '💥 אוי לא! {name} איבדה רצף של {n}. פוף!'],
   },
 };
 
-/* Translate a key. Values can be strings with {placeholders}, lists (one is picked at
-   random) or functions. Unknown keys are returned as they are. */
+/* The phone's own player gender ('m' / 'f'), used for Hebrew grammar when no g is passed. */
+let GENDER = null;
+
+/* Translate a key. A Hebrew key can have boy/girl variants ("key.m" / "key.f"), picked
+   with vars.g (or GENDER). Values can be strings with {placeholders}, lists (one is
+   picked at random) or functions. Unknown keys are returned as they are. */
 function t(key, vars = {}) {
-  let v = STRINGS[LANG][key] ?? STRINGS.en[key];
+  const g = vars.g ?? GENDER;
+  const table = STRINGS[LANG];
+  let v = (g && table[`${key}.${g}`]) ?? table[key] ?? STRINGS.en[key];
   if (v === undefined) return key;
   if (typeof v === 'function') v = v(vars);
   if (Array.isArray(v)) v = pick(v);
@@ -473,7 +532,7 @@ function t(key, vars = {}) {
 }
 
 /* Same as t(), but with the {placeholders} HTML-escaped (for names typed by players). */
-const th = (key, vars = {}) => t(key, Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, esc(v)])));
+const th = (key, vars = {}) => t(key, Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, k === 'g' ? v : esc(v)])));
 
 function setLang(lang) {
   try { localStorage.setItem('quizzle.lang', lang); } catch { }
