@@ -549,26 +549,32 @@ body.player[data-mood="late"] { background: linear-gradient(160deg, #f7a23b, #e2
 [dir="rtl"] .slide-in { animation-name: slideInRtl; }
 @keyframes slideInRtl { from { opacity: 0; transform: translateX(80px); } to { opacity: 1; transform: none; } }
 
-/* ── Owl trash talk on the answer reveal: big bubbles next to the chart ── */
+/* ── Owl trash talk on the answer reveal: big bubbles next to the chart ──
+   The owl sits at the bottom; the first bubble pops out right next to it and later
+   bubbles stack on top (column-reverse), like a chat. */
 .q-mid.with-talk { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
 .q-mid.with-talk .chart { grid-column: auto; }
-.owl-talk { display: flex; align-items: center; gap: .8rem; min-width: 0; height: 100%; }
-.owl { font-size: clamp(3.5rem, 7vw, 6rem); line-height: 1; flex: none; align-self: flex-end; animation: bounce 1.6s ease-in-out infinite; filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .25)); }
-.bubbles { display: flex; flex-direction: column; justify-content: center; gap: .8rem; min-width: 0; flex: 1; }
+.owl-talk { display: flex; align-items: flex-end; gap: .9rem; min-width: 0; height: 100%; padding-bottom: .4rem; }
+.owl { font-size: clamp(4rem, 7.5vw, 6.5rem); line-height: 1; flex: none; animation: bounce 1.6s ease-in-out infinite; filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .25)); }
+.bubbles { display: flex; flex-direction: column-reverse; align-items: flex-start; gap: .8rem; min-width: 0; flex: 1; max-height: 100%; }
 .bubble {
   position: relative; background: #fff; color: var(--ink); font-weight: 700; line-height: 1.25;
-  font-size: clamp(1.25rem, 2.3vw, 2.2rem);
+  font-size: clamp(1.25rem, 2.3vw, 2.2rem); max-width: 100%;
   padding: .55em 1em; border-radius: 22px; box-shadow: 0 7px 0 rgba(0, 0, 0, .15);
+  transform-origin: bottom left;
   animation: bubbleIn .55s cubic-bezier(.3, 1.7, .5, 1) both;
 }
+[dir="rtl"] .bubble { transform-origin: bottom right; }
 .bubble:nth-child(2) { background: #fff6d6; }
 .bubble:nth-child(3) { background: #e6f7ff; }
-.bubble::before {
-  content: ''; position: absolute; bottom: 18px; inset-inline-start: -12px; width: 24px; height: 24px; background: inherit;
+/* Only the bubble next to the owl gets a tail, pointing at the owl's beak. */
+.bubble:first-child { border-end-start-radius: 6px; }
+.bubble:first-child::before {
+  content: ''; position: absolute; bottom: 0; inset-inline-start: -16px; width: 22px; height: 26px; background: inherit;
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
-[dir="rtl"] .bubble::before { clip-path: polygon(0 0, 100% 100%, 0 100%); }
-@keyframes bubbleIn { from { opacity: 0; transform: scale(.3) translateY(30px); } to { opacity: 1; transform: none; } }
+[dir="rtl"] .bubble:first-child::before { clip-path: polygon(0 0, 100% 100%, 0 100%); }
+@keyframes bubbleIn { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
 .reveal .answers .tile { min-height: clamp(56px, 8vh, 90px); }
 
 /* Boy / girl picker on the join screen */
