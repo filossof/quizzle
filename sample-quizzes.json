@@ -1,0 +1,583 @@
+[
+  {
+    "title": "Amazing Animals",
+    "emoji": "🐾",
+    "description": "Roar, moo and splash through the animal kingdom!",
+    "questions": [
+      {
+        "type": "quiz",
+        "text": "Which animal is the tallest in the world?",
+        "answers": [
+          {
+            "text": "Giraffe",
+            "correct": true
+          },
+          {
+            "text": "Elephant",
+            "correct": false
+          },
+          {
+            "text": "Horse",
+            "correct": false
+          },
+          {
+            "text": "Camel",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "What do bees make?",
+        "answers": [
+          {
+            "text": "Honey",
+            "correct": true
+          },
+          {
+            "text": "Milk",
+            "correct": false
+          },
+          {
+            "text": "Juice",
+            "correct": false
+          },
+          {
+            "text": "Bread",
+            "correct": false
+          }
+        ],
+        "timeLimit": 15,
+        "points": 1
+      },
+      {
+        "type": "truefalse",
+        "text": "A spider has 8 legs.",
+        "answers": [
+          {
+            "text": "True",
+            "correct": true
+          },
+          {
+            "text": "False",
+            "correct": false
+          }
+        ],
+        "timeLimit": 15,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Which animal says \"Moo\"?",
+        "answers": [
+          {
+            "text": "Duck",
+            "correct": false
+          },
+          {
+            "text": "Cow",
+            "correct": true
+          },
+          {
+            "text": "Sheep",
+            "correct": false
+          },
+          {
+            "text": "Pig",
+            "correct": false
+          }
+        ],
+        "timeLimit": 10,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Where do most penguins live?",
+        "answers": [
+          {
+            "text": "In the jungle",
+            "correct": false
+          },
+          {
+            "text": "In the desert",
+            "correct": false
+          },
+          {
+            "text": "Near the South Pole",
+            "correct": true
+          },
+          {
+            "text": "On the Moon",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "What is a baby frog called?",
+        "answers": [
+          {
+            "text": "Kitten",
+            "correct": false
+          },
+          {
+            "text": "Puppy",
+            "correct": false
+          },
+          {
+            "text": "Cub",
+            "correct": false
+          },
+          {
+            "text": "Tadpole",
+            "correct": true
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "truefalse",
+        "text": "Fish breathe with lungs, just like us.",
+        "answers": [
+          {
+            "text": "True",
+            "correct": false
+          },
+          {
+            "text": "False",
+            "correct": true
+          }
+        ],
+        "timeLimit": 15,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "What color is a polar bear’s skin under its fur?",
+        "answers": [
+          {
+            "text": "White",
+            "correct": false
+          },
+          {
+            "text": "Black",
+            "correct": true
+          },
+          {
+            "text": "Pink",
+            "correct": false
+          },
+          {
+            "text": "Blue",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "What is the biggest animal that has ever lived?",
+        "answers": [
+          {
+            "text": "T-Rex",
+            "correct": false
+          },
+          {
+            "text": "Elephant",
+            "correct": false
+          },
+          {
+            "text": "Blue whale",
+            "correct": true
+          },
+          {
+            "text": "Giraffe",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 2
+      }
+    ]
+  },
+  {
+    "title": "Space Adventure",
+    "emoji": "🚀",
+    "description": "Blast off and explore planets, stars and the Moon!",
+    "questions": [
+      {
+        "type": "quiz",
+        "text": "What is the closest star to Earth?",
+        "answers": [
+          {
+            "text": "The Moon",
+            "correct": false
+          },
+          {
+            "text": "The Sun",
+            "correct": true
+          },
+          {
+            "text": "Mars",
+            "correct": false
+          },
+          {
+            "text": "The North Star",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Which planet is called the Red Planet?",
+        "answers": [
+          {
+            "text": "Venus",
+            "correct": false
+          },
+          {
+            "text": "Jupiter",
+            "correct": false
+          },
+          {
+            "text": "Mars",
+            "correct": true
+          },
+          {
+            "text": "Neptune",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "truefalse",
+        "text": "The Moon makes its own light.",
+        "answers": [
+          {
+            "text": "True",
+            "correct": false
+          },
+          {
+            "text": "False",
+            "correct": true
+          }
+        ],
+        "timeLimit": 15,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Which is the biggest planet in our solar system?",
+        "answers": [
+          {
+            "text": "Earth",
+            "correct": false
+          },
+          {
+            "text": "Saturn",
+            "correct": false
+          },
+          {
+            "text": "Mercury",
+            "correct": false
+          },
+          {
+            "text": "Jupiter",
+            "correct": true
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "How many planets are in our solar system?",
+        "answers": [
+          {
+            "text": "7",
+            "correct": false
+          },
+          {
+            "text": "8",
+            "correct": true
+          },
+          {
+            "text": "9",
+            "correct": false
+          },
+          {
+            "text": "12",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Which planet has big, beautiful rings?",
+        "answers": [
+          {
+            "text": "Saturn",
+            "correct": true
+          },
+          {
+            "text": "Mars",
+            "correct": false
+          },
+          {
+            "text": "Earth",
+            "correct": false
+          },
+          {
+            "text": "Venus",
+            "correct": false
+          }
+        ],
+        "timeLimit": 15,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "What do astronauts wear to go outside in space?",
+        "answers": [
+          {
+            "text": "Pajamas",
+            "correct": false
+          },
+          {
+            "text": "A raincoat",
+            "correct": false
+          },
+          {
+            "text": "A spacesuit",
+            "correct": true
+          },
+          {
+            "text": "A tutu",
+            "correct": false
+          }
+        ],
+        "timeLimit": 10,
+        "points": 1
+      },
+      {
+        "type": "truefalse",
+        "text": "Earth is the third planet from the Sun.",
+        "answers": [
+          {
+            "text": "True",
+            "correct": true
+          },
+          {
+            "text": "False",
+            "correct": false
+          }
+        ],
+        "timeLimit": 15,
+        "points": 2
+      }
+    ]
+  },
+  {
+    "title": "Math Magic",
+    "emoji": "🧮",
+    "description": "Quick sums and number puzzles. How fast can you go?",
+    "questions": [
+      {
+        "type": "quiz",
+        "text": "2 + 3 = ?",
+        "answers": [
+          {
+            "text": "4",
+            "correct": false
+          },
+          {
+            "text": "5",
+            "correct": true
+          },
+          {
+            "text": "6",
+            "correct": false
+          },
+          {
+            "text": "23",
+            "correct": false
+          }
+        ],
+        "timeLimit": 10,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "10 − 4 = ?",
+        "answers": [
+          {
+            "text": "6",
+            "correct": true
+          },
+          {
+            "text": "5",
+            "correct": false
+          },
+          {
+            "text": "14",
+            "correct": false
+          },
+          {
+            "text": "4",
+            "correct": false
+          }
+        ],
+        "timeLimit": 10,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "3 × 4 = ?",
+        "answers": [
+          {
+            "text": "7",
+            "correct": false
+          },
+          {
+            "text": "34",
+            "correct": false
+          },
+          {
+            "text": "12",
+            "correct": true
+          },
+          {
+            "text": "10",
+            "correct": false
+          }
+        ],
+        "timeLimit": 15,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Which number is the biggest?",
+        "answers": [
+          {
+            "text": "9",
+            "correct": false
+          },
+          {
+            "text": "19",
+            "correct": false
+          },
+          {
+            "text": "90",
+            "correct": false
+          },
+          {
+            "text": "99",
+            "correct": true
+          }
+        ],
+        "timeLimit": 10,
+        "points": 1
+      },
+      {
+        "type": "truefalse",
+        "text": "A triangle has 4 sides.",
+        "answers": [
+          {
+            "text": "True",
+            "correct": false
+          },
+          {
+            "text": "False",
+            "correct": true
+          }
+        ],
+        "timeLimit": 10,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "Half of 20 is…",
+        "answers": [
+          {
+            "text": "5",
+            "correct": false
+          },
+          {
+            "text": "10",
+            "correct": true
+          },
+          {
+            "text": "2",
+            "correct": false
+          },
+          {
+            "text": "40",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "How many minutes are in one hour?",
+        "answers": [
+          {
+            "text": "100",
+            "correct": false
+          },
+          {
+            "text": "30",
+            "correct": false
+          },
+          {
+            "text": "60",
+            "correct": true
+          },
+          {
+            "text": "24",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 1
+      },
+      {
+        "type": "quiz",
+        "text": "7 + 8 = ?",
+        "answers": [
+          {
+            "text": "14",
+            "correct": false
+          },
+          {
+            "text": "15",
+            "correct": true
+          },
+          {
+            "text": "16",
+            "correct": false
+          },
+          {
+            "text": "13",
+            "correct": false
+          }
+        ],
+        "timeLimit": 20,
+        "points": 2
+      }
+    ]
+  }
+]
