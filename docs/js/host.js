@@ -76,12 +76,26 @@
     return quiz;
   }
 
+  /* Mixes up the answer order of each multiple-choice question for this game. Each answer
+     keeps its "correct" flag, so scoring is unaffected. True/False stays in order. */
+  function shuffleAnswers(quiz) {
+    for (const q of quiz.questions) {
+      if (q.type === 'truefalse') continue;
+      const a = q.answers;
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+    }
+    return quiz;
+  }
+
   async function createGame(quizId) {
     const found = quizzes.find(q => q.id === quizId);
     if (!found) return toast(t('host.notFound'));
     Sound.sfx('pop');
     go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>${t('host.preparing')}</h1></div>`);
-    const quiz = await withImages(structuredClone(found));
+    const quiz = shuffleAnswers(await withImages(structuredClone(found)));
     for (let tries = 0; tries < 5; tries++) {
       const pin = String(100000 + Math.floor(Math.random() * 900000));
       try {
