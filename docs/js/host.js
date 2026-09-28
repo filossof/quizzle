@@ -1,16 +1,18 @@
 (() => {
-  const socket = io();
   const app = $('#app');
-  const SESSION = 'quizzle.host';
+  const SNAPSHOT = 'quizzle.game';
   let state = null;
   let screenKey = null;
   let cleanup = [];
   let knownPlayers = new Set();
+  let game = null;
+  let net = null;
+  let quizzes = [];
 
-  const saveSession = v => { try { v ? sessionStorage.setItem(SESSION, JSON.stringify(v)) : sessionStorage.removeItem(SESSION); } catch { } };
-  const loadSession = () => { try { return JSON.parse(sessionStorage.getItem(SESSION)); } catch { return null; } };
   const keyOf = s => `${s.phase}:${s.qIndex}`;
   const later = (ms, fn) => { const id = setTimeout(fn, ms); cleanup.push(() => clearTimeout(id)); };
+  const saveSnapshot = snap => { try { snap ? sessionStorage.setItem(SNAPSHOT, JSON.stringify(snap)) : sessionStorage.removeItem(SNAPSHOT); } catch { } };
+  const loadSnapshot = () => { try { return JSON.parse(sessionStorage.getItem(SNAPSHOT)); } catch { return null; } };
 
   function go(key, html) {
     cleanup.forEach(f => f());
@@ -21,9 +23,10 @@
   }
 
   function action(name, playerId) {
-    if (!state) return;
+    if (!state || !game) return;
     Sound.sfx('click');
-    socket.emit('host:action', { action: name, from: state.phase, playerId });
+    if (name === 'next' && game.phase !== state.phase) return; // stale double-click
+    game.hostAction(name, playerId);
   }
 
   function nextButton(label = 'Next ▶') {
@@ -34,41 +37,92 @@
     if (b) b.onclick = () => { b.disabled = true; action('next'); };
   }
 
-  // ── Connection ──────────────────────────────────────────────────────────
-  socket.on('connect', () => {
-    const saved = loadSession();
-    if (saved) {
-      socket.emit('host:rejoin', saved, res => {
-        if (res?.ok) return;
-        saveSession(null);
-        state = null;
-        showPicker();
-      });
-    } else if (screenKey !== 'picker') {
+  // ── Running a game ──────────────────────────────────────────────────────
+  function render(view, snap) {
+    state = view;
+    saveSnapshot(snap);
+    const screen = SCREENS[view.phase];
+    if (keyOf(view) !== screenKey) screen.enter(view);
+    else screen.update?.(view);
+    updateControls();
+  }
+
+  /* Registers the PIN on the relay and wires the game to it. Retries a few times when
+     restoring after a refresh, because the relay may still be holding the old PIN. */
+  async function goOnline(pin, retries) {
+    for (let i = 0; ; i++) {
+      try {
+        return await startHostPeer(pin, {
+          onMessage: (connId, msg, reply) => game?.handle(connId, msg, reply),
+          onClose: connId => game?.connectionClosed(connId),
+        });
+      } catch (err) {
+        if (i >= retries || !['unavailable-id', 'network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) throw err;
+        await new Promise(r => setTimeout(r, 2500));
+      }
+    }
+  }
+
+  const handlers = {
+    send: (connId, msg) => net?.send(connId, msg),
+    onChange: render,
+  };
+
+  async function createGame(quizId) {
+    const quiz = quizzes.find(q => q.id === quizId);
+    if (!quiz) return toast('That quiz could not be found.');
+    Sound.sfx('pop');
+    go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>Getting the game ready…</h1></div>`);
+    for (let tries = 0; tries < 5; tries++) {
+      const pin = String(100000 + Math.floor(Math.random() * 900000));
+      try {
+        net = await goOnline(pin, 1);
+        game = new Game({ quiz, pin, ...handlers });
+        game.syncHost();
+        return;
+      } catch (err) {
+        if (err.type !== 'unavailable-id') { showOffline(err); return; }
+      }
+    }
+    showOffline(new Error('Could not get a Game PIN.'));
+  }
+
+  async function resume(snap) {
+    go('connecting', `<div class="center-msg"><div class="big-emoji wobble">📡</div><h1>Reconnecting your game…</h1><p>Game PIN ${esc(snap.pin)}</p></div>`);
+    try {
+      net = await goOnline(snap.pin, 8);
+      game = Game.restore(snap, handlers);
+      game.syncHost();
+    } catch (err) {
+      saveSnapshot(null);
+      toast('Could not bring back the last game. Start a new one!');
       showPicker();
     }
-  });
+  }
 
-  socket.on('host:state', s => {
-    state = s;
-    const screen = SCREENS[s.phase];
-    if (keyOf(s) !== screenKey) screen.enter(s);
-    else screen.update?.(s);
-    updateControls();
-  });
+  function endGame(reason = 'The host ended the game.') {
+    game?.end(reason);
+    const n = net;
+    setTimeout(() => n?.destroy(), 400); // let the "ended" messages go out first
+    game = net = state = null;
+    saveSnapshot(null);
+  }
 
-  socket.on('game:ended', ({ reason }) => {
-    if (!state) return; // we ended it ourselves via "Play again"
-    saveSession(null);
-    state = null;
-    toast(reason);
-    showPicker();
-  });
+  function showOffline(err) {
+    console.error(err);
+    go('offline', `
+      <div class="center-msg">
+        <div class="big-emoji">📶</div>
+        <h1>Couldn't start the game</h1>
+        <p>Check the internet connection and try again.</p>
+        <button class="btn primary big" id="retry">Try again</button>
+      </div>`);
+    $('#retry').onclick = showPicker;
+  }
 
-  socket.on('host:replaced', () => {
-    saveSession(null);
-    state = null;
-    go('replaced', `<div class="center-msg"><div class="big-emoji">🪟</div><h1>This game is now open in another window.</h1><button class="btn primary big" onclick="location.reload()">Start over here</button></div>`);
+  addEventListener('pagehide', () => net?.broadcast({ t: 'host-reload' }));
+  addEventListener('beforeunload', e => {
+    if (game && game.phase !== 'podium') e.preventDefault();
   });
 
   // ── Quiz picker ─────────────────────────────────────────────────────────
@@ -79,46 +133,44 @@
       <div class="picker">
         <header class="picker-head">${logoHtml('xl')}<p class="tagline">Pick a quiz and let's play!</p></header>
         <div class="quiz-grid"><div class="loading">Loading quizzes…</div></div>
-        <a class="admin-link" href="/admin">✏️ Create or edit quizzes</a>
+        <a class="admin-link" href="admin.html">✏️ Create or edit quizzes</a>
       </div>`);
-    let quizzes = [];
-    try { quizzes = await (await fetch('/api/quizzes')).json(); } catch { }
+    try { quizzes = await loadQuizzes(); } catch { quizzes = []; }
     const grid = $('.quiz-grid');
     if (!grid || screenKey !== 'picker') return;
     grid.innerHTML = quizzes.length
       ? quizzes.map((q, i) => `
         <button class="quiz-card pop-in" style="animation-delay:${i * 70}ms;--c:${colorFor(q.title)}" data-id="${esc(q.id)}">
           <span class="qc-emoji">${esc(q.emoji)}</span>
-          <span class="qc-title">${esc(q.title)}</span>
-          <span class="qc-desc">${esc(q.description)}</span>
-          <span class="qc-meta">${q.questionCount} question${q.questionCount === 1 ? '' : 's'}</span>
+          <span class="qc-title" dir="auto">${esc(q.title)}</span>
+          <span class="qc-desc" dir="auto">${esc(q.description)}</span>
+          <span class="qc-meta">${q.questions.length} question${q.questions.length === 1 ? '' : 's'}</span>
           <span class="qc-play">Play ▶</span>
         </button>`).join('')
-      : `<div class="empty">No quizzes yet! <a href="/admin">Make your first one →</a></div>`;
+      : `<div class="empty">No quizzes yet! <a href="admin.html">Make your first one →</a></div>`;
     grid.onclick = e => {
       const card = e.target.closest('.quiz-card');
       if (card) createGame(card.dataset.id);
     };
     const auto = new URLSearchParams(location.search).get('quiz');
     if (auto) {
-      history.replaceState(null, '', '/host');
+      history.replaceState(null, '', location.pathname);
       createGame(auto);
     }
   }
 
-  function createGame(quizId) {
-    Sound.sfx('pop');
-    socket.emit('host:create', { quizId }, res => {
-      if (res?.error) return toast(res.error);
-      saveSession({ pin: res.pin, hostToken: res.hostToken });
-    });
+  // ── Shared bits ─────────────────────────────────────────────────────────
+  function qrSvg(text) {
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    return qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
   }
 
-  // ── Shared bits ─────────────────────────────────────────────────────────
   function tile(q, i, a, extra = '') {
     const st = answerStyle(q.type, i);
     return `<div class="tile ${st.cls} ${extra} pop-in" style="animation-delay:${i * 90}ms">
-      <span class="shape">${st.shape}</span><span class="txt">${esc(a.text)}</span>
+      <span class="shape">${st.shape}</span><span class="txt" dir="auto">${esc(a.text)}</span>
       ${extra === 'correct' ? '<span class="tick">✔</span>' : ''}</div>`;
   }
 
@@ -140,7 +192,7 @@
       enter(s) {
         Sound.music('lobby');
         knownPlayers = new Set(s.players.map(p => p.id));
-        const url = s.joinUrl.replace(/^https?:\/\//, '');
+        const url = s.joinUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
         go(keyOf(s), `
           <div class="lobby">
             <div class="join-panel slide-down">
@@ -149,11 +201,11 @@
                 <div class="join-step">🔢 Game PIN:</div>
                 <div class="pin">${s.pin.slice(0, 3)}&thinsp;${s.pin.slice(3)}</div>
               </div>
-              <img class="qr" alt="Scan to join" src="/api/qr?text=${encodeURIComponent(`${s.joinUrl}/?pin=${s.pin}`)}">
+              <div class="qr" title="Scan to join">${qrSvg(`${s.joinUrl}?pin=${s.pin}`)}</div>
             </div>
             <div class="lobby-bar">
               <div class="player-count"><span class="n">0</span><small>players</small></div>
-              <div class="lobby-title">${esc(s.emoji)} ${esc(s.title)}</div>
+              <div class="lobby-title" dir="auto">${esc(s.emoji)} ${esc(s.title)}</div>
               <button class="btn big primary" id="start">Start ▶</button>
             </div>
             <div class="player-cloud"></div>
@@ -183,7 +235,7 @@
             el.dataset.id = p.id;
             el.dataset.name = p.name;
             el.style.setProperty('--c', colorFor(p.name));
-            el.innerHTML = `<span class="av">${esc(p.avatar)}</span><span class="nm">${esc(p.name)}</span><span class="x">✕</span>`;
+            el.innerHTML = `<span class="av">${esc(p.avatar)}</span><span class="nm" dir="auto">${esc(p.name)}</span><span class="x">✕</span>`;
             cloud.append(el);
             if (!knownPlayers.has(p.id)) Sound.sfx('pop');
             knownPlayers.add(p.id);
@@ -205,7 +257,7 @@
         go(keyOf(s), `
           <div class="intro">
             <div class="intro-count bounce-in">Question ${s.qIndex + 1} <small>of ${s.total}</small></div>
-            <h1 class="intro-text zoom-in">${esc(q.text)}</h1>
+            <h1 class="intro-text zoom-in" dir="auto">${esc(q.text)}</h1>
             ${pointsBadge(q)}
             <div class="intro-bar"><div style="animation-duration:${s.remainingMs}ms"></div></div>
           </div>`);
@@ -220,7 +272,7 @@
         const deadline = performance.now() + s.remainingMs;
         go(keyOf(s), `
           <div class="qscreen">
-            <div class="q-top"><h1 class="q-text slide-down">${esc(q.text)}</h1></div>
+            <div class="q-top"><h1 class="q-text slide-down" dir="auto">${esc(q.text)}</h1></div>
             <div class="q-mid">
               <div class="timer"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="prog" cx="50" cy="50" r="44"/></svg><span class="num">${q.timeLimit}</span></div>
               <div class="q-media">${media(q, s)}</div>
@@ -273,7 +325,7 @@
             : `🎯 ${got} of ${s.players.length} got it right!`;
         go(keyOf(s), `
           <div class="qscreen reveal">
-            <div class="q-top"><h1 class="q-text">${esc(q.text)}</h1></div>
+            <div class="q-top"><h1 class="q-text" dir="auto">${esc(q.text)}</h1></div>
             <div class="q-mid">
               <div class="chart">${q.answers.map((a, i) => {
                 const st = answerStyle(q.type, i);
@@ -306,7 +358,7 @@
                 <div class="sb-row slide-in" data-id="${p.id}" style="top:${i * ROW}px;animation-delay:${i * 90}ms;--c:${colorFor(p.name)}">
                   <span class="sb-rank">${p.rank}</span>
                   <span class="sb-av">${esc(p.avatar)}</span>
-                  <span class="sb-name">${esc(p.name)}</span>
+                  <span class="sb-name" dir="auto">${esc(p.name)}</span>
                   ${p.streak >= 2 ? `<span class="streak">🔥 ${p.streak}</span>` : ''}
                   <span class="sb-score">${(p.score - (p.result?.points || 0)).toLocaleString()}</span>
                 </div>`).join('')}
@@ -334,14 +386,14 @@
           <div class="place place-${n}">
             ${p ? `<div class="pl-player">
               <div class="pl-av">${esc(p.avatar)}</div>
-              <div class="pl-name">${esc(p.name)}</div>
+              <div class="pl-name" dir="auto">${esc(p.name)}</div>
               <div class="pl-score">${p.score.toLocaleString()} pts · ${p.correct}/${s.total} ✔</div>
             </div>` : '<div class="pl-player"></div>'}
             <div class="pl-block"><span class="medal">${['🥇', '🥈', '🥉'][n - 1]}</span></div>
           </div>`;
         go(keyOf(s), `
           <div class="podium-screen">
-            <h1 class="pd-title bounce-in">${esc(s.emoji)} ${esc(s.title)}</h1>
+            <h1 class="pd-title bounce-in" dir="auto">${esc(s.emoji)} ${esc(s.title)}</h1>
             <div class="podium">${place(p2, 2)}${place(p1, 1)}${place(p3, 3)}</div>
             <div class="pd-actions" hidden>
               <button class="btn" id="results">📋 All results</button>
@@ -367,9 +419,7 @@
           $('.pd-actions').hidden = false;
         });
         $('#again').onclick = () => {
-          saveSession(null);
-          state = null;
-          socket.emit('host:action', { action: 'end' });
+          endGame('Thanks for playing! 🎉');
           showPicker();
         };
         $('#results').onclick = () => showResults(s);
@@ -412,8 +462,8 @@
     $('#c-full').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
     $('#c-end').onclick = () => {
       if (!confirm('End this game for everyone?')) return;
-      saveSession(null);
-      socket.emit('host:action', { action: 'end' });
+      endGame();
+      showPicker();
     };
     $('#c-unlock').onclick = () => Sound.init();
     Sound.onReady(() => $('#c-unlock').remove());
@@ -427,4 +477,6 @@
 
   bgBubbles();
   setupControls();
+  const snap = loadSnapshot();
+  if (snap) resume(snap); else showPicker();
 })();

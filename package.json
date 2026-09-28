@@ -1,19 +1,10 @@
 {
   "name": "quizzle",
-  "version": "1.0.0",
-  "description": "A colorful, kid-friendly live quiz game. Host on a big screen, play from phones.",
-  "main": "server.js",
+  "version": "2.0.0",
+  "description": "A colorful, kid-friendly live quiz game. Host on a big screen, play from phones. Runs on GitHub Pages.",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node dev-server.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "license": "MIT",
-  "dependencies": {
-    "express": "^4.22.3",
-    "qrcode": "^1.5.4",
-    "socket.io": "^4.8.4"
-  }
+  "license": "MIT"
 }

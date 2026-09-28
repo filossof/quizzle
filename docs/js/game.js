@@ -1,31 +1,25 @@
-'use strict';
-const crypto = require('crypto');
-
+/* The game engine. It runs inside the host's browser, and phones talk to it through net.js.
+   Flow: lobby → intro → question → reveal → scoreboard → intro … → podium */
 const INTRO_MS = 4000;
-const HOST_GRACE_MS = 10 * 60 * 1000;
-const GAME_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_PLAYERS = 150;
 
-const rid = () => crypto.randomBytes(12).toString('hex');
+const randomId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
 const cleanName = s => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 
 class Game {
-  constructor(manager, quiz) {
-    this.manager = manager;
-    this.io = manager.io;
+  constructor({ quiz, pin, send, onChange }) {
     this.quiz = quiz;
-    this.pin = manager.newPin();
-    this.hostToken = rid();
-    this.hostSocketId = null;
+    this.pin = pin;
+    this.send = send;           // (connId, message) → void
+    this.onChange = onChange;   // (hostView, snapshot) → void
     this.players = new Map();
-    this.phase = 'lobby'; // lobby → intro → question → reveal → scoreboard → intro … → podium
+    this.byConn = new Map();    // connId → playerId
+    this.phase = 'lobby';
     this.qIndex = -1;
     this.qStart = 0;
     this.deadline = 0;
     this.timer = null;
-    this.hostGoneTimer = null;
     this.reveal = null;
-    this.lastActivity = Date.now();
   }
 
   get question() { return this.quiz.questions[this.qIndex]; }
@@ -33,21 +27,47 @@ class Game {
   get isLast() { return this.qIndex >= this.total - 1; }
   get ranked() { return [...this.players.values()].sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt); }
 
-  // ── Host ────────────────────────────────────────────────────────────────
-  attachHost(socket) {
-    if (this.hostSocketId && this.hostSocketId !== socket.id) this.io.to(this.hostSocketId).emit('host:replaced');
-    this.hostSocketId = socket.id;
-    socket.data.hostPin = this.pin;
-    clearTimeout(this.hostGoneTimer);
+  // ── Save / restore (so refreshing the host page doesn't lose the game) ───
+  snapshot() {
+    const players = [...this.players.values()].map(({ connId, connected, ...p }) => p);
+    const { quiz, pin, phase, qIndex, qStart, deadline, reveal } = this;
+    return { quiz, pin, phase, qIndex, qStart, deadline, reveal, players };
+  }
+
+  static restore(snap, handlers) {
+    const g = new Game({ quiz: snap.quiz, pin: snap.pin, ...handlers });
+    Object.assign(g, { phase: snap.phase, qIndex: snap.qIndex, qStart: snap.qStart, reveal: snap.reveal });
+    for (const p of snap.players) g.players.set(p.id, { ...p, connId: null, connected: false });
+    const left = Math.max(0, snap.deadline - Date.now());
+    if (g.phase === 'intro') g.setTimer(left, () => g.startQuestion());
+    if (g.phase === 'question') g.setTimer(left, () => g.endQuestion());
+    return g;
+  }
+
+  // ── Messages from phones ──────────────────────────────────────────────────
+  handle(connId, msg, reply) {
+    const player = this.players.get(this.byConn.get(connId));
+    switch (msg.t) {
+      case 'check':
+        return reply(this.phase === 'podium' ? { error: 'That game has already finished.' } : { ok: true, title: this.quiz.title });
+      case 'join': return reply(this.join(connId, msg.name, msg.avatar));
+      case 'rejoin': return reply(this.rejoin(connId, msg.playerId));
+      case 'answer': return player && this.answer(player, msg.choice);
+      case 'leave': return player && this.leave(player.id);
+    }
+  }
+
+  connectionClosed(connId) {
+    const p = this.players.get(this.byConn.get(connId));
+    this.byConn.delete(connId);
+    if (!p || p.connId !== connId) return;
+    p.connected = false;
+    p.connId = null;
     this.syncHost();
+    if (this.phase === 'question') this.checkAllAnswered();
   }
 
-  detachHost(socketId) {
-    if (this.hostSocketId !== socketId) return;
-    this.hostSocketId = null;
-    this.hostGoneTimer = setTimeout(() => this.destroy('The host left the game.'), HOST_GRACE_MS);
-  }
-
+  // ── Host controls ─────────────────────────────────────────────────────────
   hostAction(action, arg) {
     switch (action) {
       case 'start':
@@ -58,17 +78,22 @@ class Game {
         else if (this.phase === 'reveal') this.isLast ? this.showPodium() : this.showScoreboard();
         else if (this.phase === 'scoreboard') this.nextQuestion();
         break;
-      case 'kick':
-        this.kick(arg);
+      case 'kick': {
+        const p = this.players.get(arg);
+        if (p?.connId) this.send(p.connId, { t: 'kicked' });
+        this.leave(arg);
         break;
-      case 'end':
-        this.destroy('The host ended the game.');
-        break;
+      }
     }
   }
 
-  // ── Players ─────────────────────────────────────────────────────────────
-  join(socket, rawName, avatar) {
+  end(reason) {
+    clearTimeout(this.timer);
+    for (const p of this.players.values()) if (p.connId) this.send(p.connId, { t: 'ended', reason });
+  }
+
+  // ── Players ───────────────────────────────────────────────────────────────
+  join(connId, rawName, avatar) {
     const name = cleanName(rawName);
     if (!name) return { error: 'Please type a nickname!' };
     if (this.phase === 'podium') return { error: 'This game has already finished.' };
@@ -77,57 +102,44 @@ class Game {
       if (p.name.toLowerCase() === name.toLowerCase()) return { error: 'Someone already has that name. Try another!' };
     }
     const player = {
-      id: rid(), name, avatar: Array.from(String(avatar || '🦉')).slice(0, 4).join(''),
+      id: randomId(), name, avatar: Array.from(String(avatar || '🦉')).slice(0, 4).join(''),
       score: 0, streak: 0, correct: 0, rank: 1, pos: this.players.size, prevPos: this.players.size,
-      answer: null, result: null, socketId: null, connected: false, joinedAt: Date.now(),
+      answer: null, result: null, connId: null, connected: false, joinedAt: Date.now(),
     };
     this.players.set(player.id, player);
     this.rankPlayers();
     player.prevPos = player.pos;
-    this.bindPlayer(socket, player);
+    this.bind(connId, player);
     return { ok: true, playerId: player.id };
   }
 
-  rejoin(socket, playerId) {
+  rejoin(connId, playerId) {
     const p = this.players.get(playerId);
     if (!p) return { error: 'Could not find you in this game.' };
-    this.bindPlayer(socket, p);
+    this.bind(connId, p);
     return { ok: true, playerId: p.id };
   }
 
-  bindPlayer(socket, p) {
-    p.socketId = socket.id;
+  bind(connId, p) {
+    if (p.connId && p.connId !== connId) this.byConn.delete(p.connId);
+    p.connId = connId;
     p.connected = true;
-    socket.data.playerPin = this.pin;
-    socket.data.playerId = p.id;
+    this.byConn.set(connId, p.id);
     this.syncPlayer(p);
     this.syncHost();
   }
 
-  playerDisconnected(socketId, playerId) {
-    const p = this.players.get(playerId);
-    if (!p || p.socketId !== socketId) return;
-    p.connected = false;
-    p.socketId = null;
-    this.syncHost();
-    if (this.phase === 'question') this.checkAllAnswered();
-  }
-
   leave(playerId) {
-    if (!this.players.delete(playerId)) return;
+    const p = this.players.get(playerId);
+    if (!p) return;
+    this.players.delete(playerId);
+    if (p.connId) this.byConn.delete(p.connId);
     this.rankPlayers();
     this.syncHost();
     if (this.phase === 'question') this.checkAllAnswered();
   }
 
-  kick(playerId) {
-    const p = this.players.get(playerId);
-    if (!p) return;
-    if (p.socketId) this.io.to(p.socketId).emit('player:kicked');
-    this.leave(playerId);
-  }
-
-  // ── Game flow ───────────────────────────────────────────────────────────
+  // ── Game flow ─────────────────────────────────────────────────────────────
   setTimer(ms, fn) {
     clearTimeout(this.timer);
     this.timer = setTimeout(fn, ms);
@@ -150,9 +162,8 @@ class Game {
     this.syncAll();
   }
 
-  answer(playerId, choice) {
-    const p = this.players.get(playerId);
-    if (!p || this.phase !== 'question' || p.answer) return;
+  answer(p, choice) {
+    if (this.phase !== 'question' || p.answer) return;
     choice = Number(choice);
     if (!Number.isInteger(choice) || choice < 0 || choice >= this.question.answers.length) return;
     p.answer = { choice, ms: Date.now() - this.qStart };
@@ -219,15 +230,7 @@ class Game {
     this.syncAll();
   }
 
-  destroy(reason) {
-    clearTimeout(this.timer);
-    clearTimeout(this.hostGoneTimer);
-    for (const p of this.players.values()) if (p.socketId) this.io.to(p.socketId).emit('game:ended', { reason });
-    if (this.hostSocketId) this.io.to(this.hostSocketId).emit('game:ended', { reason });
-    this.manager.games.delete(this.pin);
-  }
-
-  // ── Views ───────────────────────────────────────────────────────────────
+  // ── Views ─────────────────────────────────────────────────────────────────
   questionView(forHost) {
     if (!['intro', 'question', 'reveal'].includes(this.phase)) return null;
     const q = this.question;
@@ -242,7 +245,7 @@ class Game {
   hostView() {
     const players = this.ranked;
     return {
-      pin: this.pin, joinUrl: this.manager.joinUrl, title: this.quiz.title, emoji: this.quiz.emoji,
+      pin: this.pin, joinUrl: JOIN_URL, title: this.quiz.title, emoji: this.quiz.emoji,
       phase: this.phase, qIndex: this.qIndex, total: this.total,
       remainingMs: Math.max(0, this.deadline - Date.now()),
       question: this.questionView(true),
@@ -270,13 +273,10 @@ class Game {
     };
   }
 
-  syncHost() {
-    this.lastActivity = Date.now();
-    if (this.hostSocketId) this.io.to(this.hostSocketId).emit('host:state', this.hostView());
-  }
+  syncHost() { this.onChange(this.hostView(), this.snapshot()); }
 
   syncPlayer(p) {
-    if (p.socketId) this.io.to(p.socketId).emit('player:state', this.playerView(p));
+    if (p.connId) this.send(p.connId, { t: 'state', s: this.playerView(p) });
   }
 
   syncAll() {
@@ -284,33 +284,3 @@ class Game {
     for (const p of this.players.values()) this.syncPlayer(p);
   }
 }
-
-class GameManager {
-  constructor(io, joinUrl) {
-    this.io = io;
-    this.joinUrl = joinUrl;
-    this.games = new Map();
-    setInterval(() => {
-      for (const g of this.games.values()) if (Date.now() - g.lastActivity > GAME_TTL_MS) g.destroy('This game expired.');
-    }, 10 * 60 * 1000).unref();
-  }
-
-  newPin() {
-    let pin;
-    do pin = String(100000 + Math.floor(Math.random() * 900000));
-    while (this.games.has(pin));
-    return pin;
-  }
-
-  create(quiz) {
-    const game = new Game(this, quiz);
-    this.games.set(game.pin, game);
-    return game;
-  }
-
-  get(pin) {
-    return this.games.get(String(pin ?? '').replace(/\D/g, ''));
-  }
-}
-
-module.exports = { GameManager };

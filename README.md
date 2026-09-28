@@ -2,50 +2,47 @@
 
 A colorful, kid-friendly live quiz game in the style of Kahoot. Show the host screen on a TV or projector, and players join from their phones with a PIN or a QR code.
 
+**Play:** https://filossof.github.io/quizzle/host.html · **Join:** https://filossof.github.io/quizzle · **Make quizzes:** https://filossof.github.io/quizzle/admin.html
+
 - **Big-screen host view** with a lobby, animated countdown, answer chart, scoreboard and a podium with confetti
 - **Phone controller** with big colorful answer buttons, emoji avatars, a random-name 🎲 button, vibration, and friendly feedback after every answer
-- **Sounds and music**: lobby tune, tense question music, victory fanfare, drumroll, ticks, dings. All of it is generated live in the browser, so there are no audio files
-- **Quiz Studio** (`/admin`) for making quizzes: multiple choice or true/false, images, time limits, double points, reordering, import/export
+- **Sounds and music**: lobby tune, tense question music, victory fanfare, drumroll, ticks, dings. All of it is generated live in the browser
+- **Quiz Studio** for making quizzes: multiple choice or true/false, images, time limits, double points, import/export. Hebrew and other right-to-left languages work
 - Scoring rewards speed (up to 1000 points) plus answer streak bonuses 🔥
-- Players can refresh or lock their phone and rejoin automatically
+- Phones and the host can refresh or drop Wi-Fi and reconnect automatically
 
-## Run it
+## How it works (no server needed)
 
-```bash
-npm install
-npm start
-```
+Quizzle is a static site on **GitHub Pages**.
 
-Then open:
+- **The host's browser is the game server.** It registers the Game PIN on the free public [PeerJS](https://peerjs.com) relay (no account needed), and phones connect directly to it over WebRTC. Keep the host tab open and visible during a game.
+- **Quizzes are stored in this repo** in [`docs/quizzes.json`](docs/quizzes.json), and pictures in [`docs/img/`](docs/img). The Quiz Studio saves by committing to the repo through the GitHub API, so every change is kept in git history and nothing gets wiped.
 
-| What | Where |
+### Connecting the Quiz Studio
+
+The studio needs a GitHub key once per device:
+
+1. Open https://github.com/settings/personal-access-tokens/new
+2. **Repository access** → Only select repositories → `quizzle`
+3. **Permissions** → Repository permissions → **Contents: Read and write**
+4. Generate the token and paste it into the studio
+
+Only people with a key can change quizzes. Anyone can play.
+
+## Files
+
+| Path | What |
 | --- | --- |
-| 🎮 Host a game (big screen) | http://localhost:3000/host |
-| ✏️ Quiz Studio | http://localhost:3000/admin (password `quizzle`) |
-| 📱 Players join | the address shown on the host screen, e.g. `http://192.168.1.20:3000` |
+| `docs/host.html`, `js/host.js` | Big screen |
+| `docs/index.html`, `js/player.js` | Phone |
+| `docs/admin.html`, `js/admin.js`, `js/github.js` | Quiz Studio, which saves to GitHub |
+| `docs/js/game.js` | Game engine (runs in the host's browser) |
+| `docs/js/net.js` | Peer-to-peer connection and auto-reconnect |
+| `docs/js/audio.js` | Web Audio synthesizer for sound effects and music |
+| `docs/js/config.js` | Which repo quizzes are loaded from and saved to |
 
-Phones must be on the **same Wi-Fi** as the computer running the server. If macOS asks whether to allow incoming connections for `node`, click **Allow**.
-
-## Settings
-
-Set these as environment variables:
-
-| Variable | Default | What it does |
-| --- | --- | --- |
-| `PORT` | `3000` | Port to listen on |
-| `ADMIN_PASSWORD` | `quizzle` | Password for the Quiz Studio |
-| `PUBLIC_URL` | auto-detected LAN address | Join address shown to players (set this when hosting online) |
-| `DATA_DIR` | `./data` | Where quizzes are saved (`quizzes.json`) |
+## Local testing
 
 ```bash
-ADMIN_PASSWORD=secret PORT=8080 npm start
+npm start   # then open http://localhost:8080/host.html
 ```
-
-## How it works
-
-- `server.js` runs Express and Socket.IO and serves the REST API for quizzes
-- `src/game.js` holds the game state machine: lobby → intro → question → reveal → scoreboard → … → podium
-- `src/store.js` stores quizzes in a JSON file; the samples in `sample-quizzes.json` seed the first run
-- `public/` has plain HTML, CSS and JS with no build step. `audio.js` is a small Web Audio synthesizer and sequencer
-
-Your quizzes live in `data/quizzes.json`, which is git-ignored. Use **⬇ Export** in the studio to back them up.

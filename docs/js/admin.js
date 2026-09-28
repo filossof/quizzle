@@ -1,24 +1,67 @@
 (() => {
   const app = $('#app');
-  const PW_KEY = 'quizzle.adminpw';
   const COVER_EMOJIS = ['🦉', '🐾', '🚀', '🧮', '🌍', '🎨', '🎵', '⚽', '🦕', '🍎', '🔬', '📚', '🌈', '🐳', '🍕', '🏰', '🧙', '🎃', '🎄', '🌻', '🦄', '🤖', '🚂', '⭐'];
   const TIMES = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
-  let pw = (() => { try { return localStorage.getItem(PW_KEY) || ''; } catch { return ''; } })();
+  let quizzes = [];
   let quiz = null;
   let current = 0;
   let dirty = false;
+  const previews = new Map(); // uploaded image path → data URL, until GitHub Pages publishes the file
 
-  async function api(method, url, body) {
-    const res = await fetch(url, {
-      method,
-      headers: { 'content-type': 'application/json', 'x-admin-password': pw },
-      body: body ? JSON.stringify(body) : undefined,
+  const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('');
+  const previewSrc = src => previews.get(src) || src;
+
+  /* Cleans up a quiz before saving; throws a friendly message when something is missing. */
+  function sanitizeQuiz(input) {
+    const str = (s, max) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+    const title = str(input.title, 80);
+    if (!title) throw new Error('Your quiz needs a title.');
+    const questions = (input.questions || []).map((q, i) => {
+      const where = `Question ${i + 1}`;
+      const type = q.type === 'truefalse' ? 'truefalse' : 'quiz';
+      const text = str(q.text, 200);
+      if (!text) throw new Error(`${where} needs some question text.`);
+      let answers = (q.answers || []).slice(0, 4).map(a => ({ text: str(a?.text, 90), correct: !!a?.correct }));
+      if (type === 'truefalse') {
+        const trueIsCorrect = answers[0]?.correct || !answers[1]?.correct;
+        answers = [{ text: 'True', correct: trueIsCorrect }, { text: 'False', correct: !trueIsCorrect }];
+      } else {
+        answers = answers.filter(a => a.text);
+        if (answers.length < 2) throw new Error(`${where} needs at least 2 answers.`);
+        if (!answers.some(a => a.correct)) throw new Error(`${where} needs a correct answer.`);
+      }
+      return {
+        id: q.id || newId(), type, text,
+        image: typeof q.image === 'string' ? q.image : '',
+        timeLimit: Math.min(240, Math.max(5, Math.round(Number(q.timeLimit) || 20))),
+        points: [0, 1, 2].includes(Number(q.points)) ? Number(q.points) : 1,
+        answers,
+      };
     });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 401) { showLogin('Please log in again.'); throw new Error('Wrong password'); }
-    if (!res.ok) throw new Error(data.error || 'Something went wrong');
-    return data;
+    if (!questions.length) throw new Error('Add at least one question.');
+    return {
+      id: input.id || newId(), title,
+      description: str(input.description, 160),
+      emoji: Array.from(str(input.emoji, 16) || '🦉').slice(0, 4).join(''),
+      questions, updatedAt: Date.now(),
+    };
+  }
+
+  /* Uploads any newly added pictures and swaps them for their file path. */
+  async function uploadImages(q) {
+    for (const question of q.questions) {
+      if (!question.image?.startsWith('data:')) continue;
+      const data = question.image;
+      question.image = await GitHub.uploadImage(data);
+      previews.set(question.image, data);
+    }
+    return q;
+  }
+
+  function fail(err) {
+    toast(err.message || String(err));
+    if (err.status === 401) showLogin(err.message);
   }
 
   const newQuestion = () => ({
@@ -72,27 +115,44 @@
     });
   }
 
-  // ── Login ───────────────────────────────────────────────────────────────
+  // ── Connect to GitHub ───────────────────────────────────────────────────
   function showLogin(error = '') {
+    const tokenUrl = 'https://github.com/settings/personal-access-tokens/new';
     app.innerHTML = `
       <div class="join">
         ${logoHtml('xl')}
-        <form class="join-card pop-in" id="login">
+        <form class="join-card pop-in" id="login" style="width:min(520px,100%)">
           <div class="join-title">Quiz Studio 🔑</div>
-          <input type="password" id="pw" placeholder="Admin password" aria-label="Admin password">
-          <button class="btn big dark">Enter</button>
+          <p class="gh-status">Quizzes are saved in your GitHub repo <b>${esc(CONFIG.owner)}/${esc(CONFIG.repo)}</b>, so they're never lost. Connect it once on this device:</p>
+          <ol class="gh-steps">
+            <li>Open <a href="${tokenUrl}" target="_blank" rel="noopener">GitHub → new fine-grained token</a></li>
+            <li>Name it <b>quizzle</b> and pick an expiration (for example, 1 year)</li>
+            <li><b>Repository access</b> → Only select repositories → <b>${esc(CONFIG.repo)}</b></li>
+            <li><b>Permissions</b> → Repository permissions → <b>Contents: Read and write</b></li>
+            <li>Click <b>Generate token</b>, copy it, and paste it here 👇</li>
+          </ol>
+          <input type="password" id="token" placeholder="github_pat_…" aria-label="GitHub token" autocomplete="off">
+          <button class="btn big dark">Connect</button>
           <div class="form-error">${esc(error)}</div>
         </form>
-        <a class="link-btn" href="/host">← Back to games</a>
+        <a class="link-btn" href="host.html">← Back to games</a>
       </div>`;
-    $('#pw').focus();
+    $('#token').focus();
     $('#login').onsubmit = async e => {
       e.preventDefault();
-      pw = $('#pw').value;
-      const ok = (await fetch('/api/admin/login', { method: 'POST', headers: { 'x-admin-password': pw } })).ok;
-      if (!ok) { $('.form-error').textContent = 'Wrong password'; bump($('#login'), 'shake'); return; }
-      try { localStorage.setItem(PW_KEY, pw); } catch { }
-      showList();
+      const btn = $('#login .btn');
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+      try {
+        await GitHub.connect($('#token').value);
+        showList();
+      } catch (err) {
+        GitHub.forget();
+        $('.form-error').textContent = err.status === 401 ? "GitHub didn't accept that key. Copy it again?" : err.message;
+        bump($('#login'), 'shake');
+        btn.disabled = false;
+        btn.textContent = 'Connect';
+      }
     };
   }
 
@@ -105,26 +165,34 @@
         <header class="a-top">
           ${logoHtml('sm')}<span class="a-sub">Studio</span>
           <div class="grow"></div>
-          <a class="btn" href="/host" target="_blank">🎮 Host a game</a>
+          <a class="btn" href="host.html" target="_blank">🎮 Host a game</a>
           <button class="btn" id="import">📥 Import</button>
           <button class="btn primary" id="new">＋ New quiz</button>
+          <button class="btn small" id="logout" title="Disconnect GitHub on this device">🔌</button>
         </header>
-        <main class="a-main"><div class="quiz-grid"><div class="loading">Loading…</div></div></main>
+        <main class="a-main"><div class="quiz-grid"><div class="loading">Loading from GitHub…</div></div>
+          <p class="gh-status" style="text-align:center;margin-top:2rem">💾 Saved in <a href="${GitHub.repoUrl}/blob/${CONFIG.branch}/${CONFIG.dir}/quizzes.json" target="_blank" rel="noopener">${esc(CONFIG.owner)}/${esc(CONFIG.repo)}</a>, and every change is kept in its history.</p>
+        </main>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div>`;
     $('#new').onclick = () => openEditor({ title: '', emoji: '🦉', description: '', questions: [newQuestion()] });
     $('#import').onclick = () => $('#importFile').click();
     $('#importFile').onchange = importFile;
+    $('#logout').onclick = () => {
+      if (!confirm('Disconnect GitHub on this device? Your quizzes stay safe in the repo.')) return;
+      GitHub.forget();
+      showLogin();
+    };
 
-    const list = await (await fetch('/api/quizzes')).json();
+    try { quizzes = await GitHub.list(); } catch (err) { return fail(err); }
     const grid = $('.quiz-grid');
     if (!grid) return;
-    grid.innerHTML = list.length ? list.map((q, i) => `
+    grid.innerHTML = quizzes.length ? quizzes.map((q, i) => `
       <div class="quiz-card admin-card pop-in" style="animation-delay:${i * 50}ms;--c:${colorFor(q.title)}" data-id="${esc(q.id)}">
         <span class="qc-emoji">${esc(q.emoji)}</span>
-        <span class="qc-title">${esc(q.title)}</span>
-        <span class="qc-desc">${esc(q.description)}</span>
-        <span class="qc-meta">${q.questionCount} question${q.questionCount === 1 ? '' : 's'}</span>
+        <span class="qc-title" dir="auto">${esc(q.title)}</span>
+        <span class="qc-desc" dir="auto">${esc(q.description)}</span>
+        <span class="qc-meta">${q.questions.length} question${q.questions.length === 1 ? '' : 's'}</span>
         <div class="qc-actions">
           <button class="btn small primary" data-act="edit">✏️ Edit</button>
           <button class="btn small" data-act="play" title="Host this quiz">▶</button>
@@ -139,31 +207,33 @@
       const btn = e.target.closest('[data-act]');
       if (!btn) return;
       const id = btn.closest('[data-id]').dataset.id;
-      const title = list.find(q => q.id === id)?.title;
+      const q = quizzes.find(x => x.id === id);
       try {
         switch (btn.dataset.act) {
-          case 'edit': openEditor(await api('GET', `/api/admin/quizzes/${id}`)); break;
-          case 'play': window.open(`/host?quiz=${encodeURIComponent(id)}`, '_blank'); break;
+          case 'edit': openEditor(q); break;
+          case 'play': window.open(`host.html?quiz=${encodeURIComponent(id)}`, '_blank'); break;
           case 'dup': {
-            const q = await api('GET', `/api/admin/quizzes/${id}`);
-            await api('POST', '/api/admin/quizzes', { ...q, id: undefined, title: `${q.title} (copy)`.slice(0, 80) });
+            const copy = { ...structuredClone(q), id: newId(), title: `${q.title} (copy)`.slice(0, 80), updatedAt: Date.now() };
+            btn.disabled = true;
+            await GitHub.update(`Duplicate quiz "${q.title}"`, list => [copy, ...list]);
             toast('Duplicated!');
             showList();
             break;
           }
           case 'export': {
-            const { id: _, updatedAt, ...q } = await api('GET', `/api/admin/quizzes/${id}`);
-            downloadJson(q.title, q);
+            const { id: _, updatedAt, ...data } = q;
+            downloadJson(q.title, data);
             break;
           }
           case 'delete':
-            if (!confirm(`Delete "${title}"? This can't be undone.`)) return;
-            await api('DELETE', `/api/admin/quizzes/${id}`);
+            if (!confirm(`Delete "${q.title}"? (It stays in the GitHub history, just in case.)`)) return;
+            btn.disabled = true;
+            await GitHub.update(`Delete quiz "${q.title}"`, list => list.filter(x => x.id !== id));
             toast('Deleted');
             showList();
             break;
         }
-      } catch (err) { toast(err.message); }
+      } catch (err) { fail(err); }
     };
   }
 
@@ -173,12 +243,13 @@
     if (!file) return;
     try {
       const data = JSON.parse(await file.text());
-      const items = Array.isArray(data) ? data : [data];
-      for (const q of items) await api('POST', '/api/admin/quizzes', { ...q, id: undefined });
+      const items = (Array.isArray(data) ? data : [data]).map(q => sanitizeQuiz({ ...q, id: undefined }));
+      for (const q of items) await uploadImages(q);
+      await GitHub.update(`Import ${items.length} quiz(zes)`, list => [...items, ...list]);
       toast(`Imported ${items.length} quiz${items.length === 1 ? '' : 'zes'}!`);
       showList();
     } catch (err) {
-      toast(`Import failed: ${err.message}`);
+      fail(new Error(`Import failed: ${err.message}`));
     }
   }
 
@@ -193,14 +264,14 @@
         <header class="a-top">
           <button class="btn" id="back">← Quizzes</button>
           <button class="emoji-btn" id="emoji" title="Pick a cover emoji">${esc(quiz.emoji)}</button>
-          <input class="title-in" id="title" maxlength="80" placeholder="Name your quiz…" value="${esc(quiz.title)}">
+          <input class="title-in" id="title" dir="auto" maxlength="80" placeholder="Name your quiz…" value="${esc(quiz.title)}">
           <div class="grow"></div>
           <span class="save-state"></span>
           <button class="btn primary" id="save">💾 Save</button>
         </header>
         <div class="ed-body">
           <aside class="ed-side">
-            <input class="desc-in" id="desc" maxlength="160" placeholder="Short description (optional)" value="${esc(quiz.description)}">
+            <input class="desc-in" id="desc" dir="auto" maxlength="160" placeholder="Short description (optional)" value="${esc(quiz.description)}">
             <div class="q-thumbs"></div>
             <button class="btn add-q" id="addQ">＋ Add question</button>
           </aside>
@@ -259,7 +330,7 @@
     box.innerHTML = quiz.questions.map((q, i) => `
       <div class="thumb ${i === current ? 'active' : ''} ${problemsOf(q).length ? 'invalid' : ''}" data-i="${i}">
         <span class="t-num">${i + 1}</span>
-        <span class="t-text">${esc(q.text) || '<i>New question</i>'}</span>
+        <span class="t-text" dir="auto">${esc(q.text) || '<i>New question</i>'}</span>
         <span class="t-type">${q.type === 'truefalse' ? 'True/False' : 'Quiz'} · ${q.timeLimit}s</span>
         <span class="t-move">
           <button data-move="-1" title="Move up" ${i === 0 ? 'disabled' : ''}>▲</button>
@@ -317,10 +388,10 @@
           <button class="btn small" id="q-dup">⧉ Duplicate</button>
           <button class="btn small danger" id="q-del" ${quiz.questions.length < 2 ? 'disabled' : ''}>🗑 Delete</button>
         </div>
-        <textarea id="q-text" class="qe-text" maxlength="200" rows="2" placeholder="Type your question here…">${esc(q.text)}</textarea>
+        <textarea id="q-text" class="qe-text" dir="auto" maxlength="200" rows="2" placeholder="Type your question here…">${esc(q.text)}</textarea>
         <div class="qe-media">
           ${q.image
-            ? `<div class="media-preview"><img src="${esc(q.image)}" alt=""><button class="btn small danger" id="img-rm">✕ Remove image</button></div>`
+            ? `<div class="media-preview"><img src="${esc(previewSrc(q.image))}" alt=""><button class="btn small danger" id="img-rm">✕ Remove image</button></div>`
             : `<div class="media-drop" id="drop">
                  <div class="md-icon">🖼️</div>
                  <p>Add a picture <small>(optional)</small></p>
@@ -334,7 +405,7 @@
             const tf = q.type === 'truefalse';
             return `<div class="qe-ans ${st.cls} ${a.correct ? 'is-correct' : ''} ${!tf && !a.text.trim() ? 'empty' : ''}" data-i="${i}">
               <span class="shape">${st.shape}</span>
-              <input maxlength="90" value="${esc(a.text)}" placeholder="Answer ${i + 1}${i < 2 ? '' : ' (optional)'}" ${tf ? 'readonly' : ''}>
+              <input maxlength="90" dir="auto" value="${esc(a.text)}" placeholder="Answer ${i + 1}${i < 2 ? '' : ' (optional)'}" ${tf ? 'readonly' : ''}>
               <button class="correct-toggle" title="Mark as correct" aria-pressed="${a.correct}">✔</button>
             </div>`;
           }).join('')}
@@ -426,17 +497,20 @@
     }
     const btn = $('#save');
     btn.disabled = true;
+    $('.save-state').textContent = 'Saving to GitHub…';
     try {
-      const saved = quiz.id
-        ? await api('PUT', `/api/admin/quizzes/${quiz.id}`, quiz)
-        : await api('POST', '/api/admin/quizzes', quiz);
-      quiz.id = saved.id;
-      saved.questions.forEach((sq, i) => { if (quiz.questions[i]) quiz.questions[i].id = sq.id; });
+      const clean = await uploadImages(sanitizeQuiz(quiz));
+      const isNew = !quizzes.some(q => q.id === clean.id);
+      quizzes = await GitHub.update(`${isNew ? 'Add' : 'Update'} quiz "${clean.title}"`, list =>
+        list.some(q => q.id === clean.id) ? list.map(q => (q.id === clean.id ? clean : q)) : [clean, ...list]);
+      quiz.id = clean.id;
+      clean.questions.forEach((sq, i) => { Object.assign(quiz.questions[i], { id: sq.id, image: sq.image }); });
       dirty = false;
-      $('.save-state').textContent = '✔ Saved';
+      $('.save-state').textContent = '✔ Saved to GitHub';
       toast('Saved! 🎉');
     } catch (err) {
-      toast(err.message);
+      $('.save-state').textContent = 'Not saved';
+      fail(err);
     } finally {
       btn.disabled = false;
     }
@@ -448,10 +522,5 @@
   });
 
   bgBubbles(10);
-  if (pw) {
-    fetch('/api/admin/login', { method: 'POST', headers: { 'x-admin-password': pw } })
-      .then(r => (r.ok ? showList() : showLogin()));
-  } else {
-    showLogin();
-  }
+  if (GitHub.token) showList(); else showLogin();
 })();

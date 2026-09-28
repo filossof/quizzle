@@ -1,5 +1,4 @@
 (() => {
-  const socket = io();
   const app = $('#app');
   const SESSION = 'quizzle.player';
   let state = null;
@@ -34,54 +33,81 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state) keepAwake(); });
 
   // ── Connection ──────────────────────────────────────────────────────────
-  socket.on('connect', () => {
-    if (session) {
-      socket.emit('player:rejoin', session, res => {
-        if (res?.ok) return;
-        save(null);
-        if (state) toast('That game has ended.');
-        state = null;
-        showPin();
-      });
-    } else if (!screenKey || !screenKey.startsWith('join')) {
+  const link = new PlayerLink({ onMessage, onStatus });
+
+  function onMessage(msg) {
+    if (msg.t === 'state') {
+      const prev = state;
+      state = msg.s;
+      const screen = SCREENS[state.phase];
+      if (keyOf(state) !== screenKey) screen.enter(state, prev);
+      else screen.update?.(state);
+    } else if (msg.t === 'kicked') {
+      leaveGame();
+      go('kicked', `
+        <div class="p-center">
+          <div class="big-emoji wobble">🙈</div>
+          <h1>You were removed from the game</h1>
+          <button class="btn big dark" id="again">Join again</button>
+        </div>`);
+      $('#again').onclick = () => showPin();
+    } else if (msg.t === 'ended') {
+      const wasPodium = state?.phase === 'podium';
+      leaveGame();
+      if (wasPodium) return;
+      go('ended', `
+        <div class="p-center">
+          <div class="big-emoji">👋</div>
+          <h1 dir="auto">${esc(msg.reason)}</h1>
+          <p>Thanks for playing!</p>
+          <button class="btn big dark" id="again">Join a new game</button>
+        </div>`);
+      $('#again').onclick = () => showPin();
+    }
+  }
+
+  function onStatus(status) {
+    $('#net-status').hidden = status !== 'reconnecting' || !session;
+    if (status === 'gone' && session) {
+      go('lost', `
+        <div class="p-center">
+          <div class="big-emoji">📶</div>
+          <h1>Lost connection to the game</h1>
+          <p>Check your internet, then tap below.</p>
+          <button class="btn big dark" id="retry">Reconnect</button>
+          <button class="link-btn" id="new">Join a different game</button>
+        </div>`);
+      $('#retry').onclick = resumeSession;
+      $('#new').onclick = () => { leaveGame(); showPin(); };
+    }
+  }
+
+  function leaveGame() {
+    save(null);
+    state = null;
+    link.disconnect();
+  }
+
+  link.onReconnect = async () => {
+    if (!session) return;
+    const res = await link.request({ t: 'rejoin', playerId: session.playerId });
+    if (res?.ok) return;
+    const hadGame = !!state;
+    leaveGame();
+    if (hadGame) toast('That game has ended.');
+    showPin();
+  };
+
+  async function resumeSession() {
+    go('resume', `<div class="p-center"><div class="big-emoji wobble">📡</div><h1>Getting you back in…</h1></div>`);
+    try {
+      await link.connect(session.pin);
+      await link.onReconnect();
+    } catch {
+      leaveGame();
       showPin();
     }
-  });
-
-  socket.on('player:state', s => {
-    const prev = state;
-    state = s;
-    const screen = SCREENS[s.phase];
-    if (keyOf(s) !== screenKey) screen.enter(s, prev);
-    else screen.update?.(s);
-  });
-
-  socket.on('player:kicked', () => {
-    save(null);
-    state = null;
-    go('kicked', `
-      <div class="p-center">
-        <div class="big-emoji wobble">🙈</div>
-        <h1>You were removed from the game</h1>
-        <button class="btn big dark" id="again">Join again</button>
-      </div>`);
-    $('#again').onclick = showPin;
-  });
-
-  socket.on('game:ended', ({ reason }) => {
-    save(null);
-    const wasPodium = state?.phase === 'podium';
-    state = null;
-    if (wasPodium) return;
-    go('ended', `
-      <div class="p-center">
-        <div class="big-emoji">👋</div>
-        <h1>${esc(reason)}</h1>
-        <p>Thanks for playing!</p>
-        <button class="btn big dark" id="again">Join a new game</button>
-      </div>`);
-    $('#again').onclick = showPin;
-  });
+  }
 
   // ── Joining ─────────────────────────────────────────────────────────────
   function showPin(error) {
@@ -95,17 +121,30 @@
         </form>
         <p class="join-hint">Ask your host for the PIN on the big screen 📺</p>
       </div>`);
-    const form = $('#pinForm'), input = $('#pin');
+    const form = $('#pinForm'), input = $('#pin'), btn = form.querySelector('.btn');
     const fail = msg => {
       $('.form-error').textContent = msg;
       bump(form, 'shake');
       buzz([60, 40, 60]);
     };
-    form.onsubmit = e => {
+    form.onsubmit = async e => {
       e.preventDefault();
       const pin = input.value.replace(/\D/g, '');
       if (pin.length !== 6) return fail('The PIN has 6 numbers.');
-      socket.emit('player:check', { pin }, res => (res?.ok ? showName(pin, res.title) : fail(res?.error || 'Something went wrong.')));
+      btn.disabled = true;
+      btn.textContent = 'Connecting…';
+      try {
+        await link.connect(pin);
+        const res = await link.request({ t: 'check' });
+        if (!res?.ok) throw new Error(res?.error || 'Something went wrong.');
+        showName(pin, res.title);
+      } catch (err) {
+        link.disconnect();
+        btn.disabled = false;
+        btn.textContent = 'Enter';
+        fail(err.message === 'no-game' ? "Hmm, we couldn't find a game with that PIN."
+          : err.message === 'timeout' || err.type ? 'Could not connect. Check your internet and try again.' : err.message);
+      }
     };
     if (error) fail(error);
     if (pinFromUrl) {
@@ -125,10 +164,10 @@
       <div class="join">
         ${logoHtml()}
         <form class="join-card name-card pop-in" id="nameForm" autocomplete="off">
-          <div class="join-title">${esc(title)}</div>
+          <div class="join-title" dir="auto">${esc(title)}</div>
           <div class="avatar-preview bounce">${myAvatar}</div>
           <div class="name-row">
-            <input id="name" maxlength="16" placeholder="Your nickname" aria-label="Nickname" autocapitalize="words" spellcheck="false">
+            <input id="name" dir="auto" maxlength="16" placeholder="Your nickname" aria-label="Nickname" autocapitalize="words" spellcheck="false">
             <button type="button" class="dice" title="Random name">🎲</button>
           </div>
           <div class="avatars">${AVATARS.map(a => `<button type="button" class="av-opt ${a === myAvatar ? 'sel' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
@@ -139,7 +178,7 @@
       </div>`);
     const form = $('#nameForm'), input = $('#name');
     input.focus();
-    $('#back').onclick = () => showPin();
+    $('#back').onclick = () => { link.disconnect(); showPin(); };
     $('.dice').onclick = () => {
       input.value = `${pick(ADJ)} ${pick(NOUN)}`;
       bump($('.dice'), 'spin');
@@ -161,7 +200,7 @@
       const fail = msg => { $('.form-error').textContent = msg; bump(form, 'shake'); buzz([60, 40, 60]); };
       if (!name) return fail('Type a nickname or tap 🎲');
       form.querySelector('.btn').disabled = true;
-      socket.emit('player:join', { pin, name, avatar: myAvatar }, res => {
+      link.request({ t: 'join', name, avatar: myAvatar }).then(res => {
         form.querySelector('.btn').disabled = false;
         if (!res?.ok) return fail(res?.error || 'Could not join.');
         save({ pin, playerId: res.playerId });
@@ -174,16 +213,16 @@
   // ── Game screens ────────────────────────────────────────────────────────
   const foot = s => `
     <div class="p-foot">
-      <span class="pf-me"><span class="pf-av">${esc(s.me.avatar)}</span>${esc(s.me.name)}</span>
+      <span class="pf-me"><span class="pf-av">${esc(s.me.avatar)}</span><span dir="auto">${esc(s.me.name)}</span></span>
       <button class="pf-sound" title="Sound on/off">${Sound.soundOn ? '🔊' : '🔇'}</button>
       <span class="pf-score">${s.me.score.toLocaleString()}</span>
     </div>`;
-  const head = s => `<div class="p-head"><span>${s.qIndex >= 0 ? `Question ${s.qIndex + 1} / ${s.total}` : esc(s.title)}</span><span class="p-timer"></span></div>`;
+  const head = s => `<div class="p-head"><span>${s.qIndex >= 0 ? `Question ${s.qIndex + 1} / ${s.total}` : `<span dir="auto">${esc(s.title)}</span>`}</span><span class="p-timer"></span></div>`;
 
   function rankLine(s) {
     if (s.me.rank === 1) return `You're in <b>1st place!</b> 👑`;
     let line = `You're in <b>${ordinal(s.me.rank)} place</b>`;
-    if (s.ahead) line += `<br><small>${s.ahead.gap.toLocaleString()} points behind ${esc(s.ahead.name)}. You can do it!</small>`;
+    if (s.ahead) line += `<br><small>${s.ahead.gap.toLocaleString()} points behind <span dir="auto">${esc(s.ahead.name)}</span>. You can do it!</small>`;
     return line;
   }
 
@@ -215,7 +254,7 @@
           ${head(s)}
           <div class="p-center">
             <div class="p-qnum bounce-in">Question ${s.qIndex + 1}</div>
-            <div class="p-qtext zoom-in">${esc(s.question.text)}</div>
+            <div class="p-qtext zoom-in" dir="auto">${esc(s.question.text)}</div>
             ${s.question.points === 2 ? '<div class="badge double">⭐ Double points!</div>' : ''}
             <div class="wait-shapes spin">${SHAPES.map((sh, i) => `<span class="${ANSWER_CLASSES[i]}">${sh}</span>`).join('')}</div>
             <p>Get ready…</p>
@@ -231,12 +270,12 @@
         const deadline = performance.now() + s.remainingMs;
         go(keyOf(s), `
           ${head(s)}
-          <div class="p-qtext small">${esc(q.text)}</div>
+          <div class="p-qtext small" dir="auto">${esc(q.text)}</div>
           <div class="p-answers n${q.answers.length}">
             ${q.answers.map((a, i) => {
               const st = answerStyle(q.type, i);
               return `<button class="p-ans ${st.cls} pop-in" style="animation-delay:${i * 70}ms" data-i="${i}">
-                <span class="shape">${st.shape}</span><span class="txt">${esc(a.text)}</span></button>`;
+                <span class="shape">${st.shape}</span><span class="txt" dir="auto">${esc(a.text)}</span></button>`;
             }).join('')}
           </div>
           ${foot(s)}`);
@@ -253,7 +292,7 @@
           if (!b) return;
           const choice = Number(b.dataset.i);
           buzz(40);
-          socket.emit('player:answer', { choice });
+          link.send({ t: 'answer', choice });
           showAnswered({ ...state, answered: choice }, choice);
         };
       },
@@ -282,7 +321,7 @@
           html = `
             <div class="result-icon pop-big">✖</div>
             <h1 class="result-title">${pick(['Oops, not quite!', 'So close!', 'Nice try!'])}</h1>
-            <p class="answer-was">The answer was <b>${esc(right)}</b></p>
+            <p class="answer-was">The answer was <b dir="auto">${esc(right)}</b></p>
             <p>${pick(["You'll get the next one! 💪", 'Keep going, you can do it! 🌟', "Don't give up! 🚀"])}</p>`;
         } else {
           mood = 'late';
@@ -290,7 +329,7 @@
           html = `
             <div class="result-icon pop-big">⏰</div>
             <h1 class="result-title">Time's up!</h1>
-            <p class="answer-was">The answer was <b>${esc(right)}</b></p>
+            <p class="answer-was">The answer was <b dir="auto">${esc(right)}</b></p>
             <p>Be quick next time! ⚡</p>`;
         }
         go(keyOf(s), `
@@ -334,9 +373,8 @@
               <button class="btn big dark" id="again">Play another game</button>
             </div>`, top ? 'good' : '');
           $('#again').onclick = () => {
-            socket.emit('player:leave');
-            save(null);
-            state = null;
+            link.send({ t: 'leave' });
+            leaveGame();
             showPin();
           };
           if (top) {
@@ -375,4 +413,5 @@
 
   $('#p-sound').textContent = Sound.soundOn ? '🔊' : '🔇';
   bgBubbles(10);
+  if (session) resumeSession(); else showPin();
 })();

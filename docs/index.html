@@ -9,14 +9,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body class="player">
 <div id="app"></div>
+<div id="net-status" hidden>🔄 Reconnecting…</div>
 <button id="p-sound" class="ctl mini" title="Sound on/off">🔊</button>
-<script src="/socket.io/socket.io.js"></script>
-<script src="/js/common.js"></script>
-<script src="/js/audio.js"></script>
-<script src="/js/player.js"></script>
+<script src="vendor/peerjs.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/common.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/net.js"></script>
+<script src="js/player.js"></script>
 </body>
 </html>
